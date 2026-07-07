@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PIXELPIGS • MINT NOW</title>
+  <meta name="description" content="Mint PixelPigs — 3,333 pure code pigs on Robinhood Chain. $1 each in ETH. No AI.">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap">
+  <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:#000000;
+      --card:#121212;
+      --rh-green:#00C805;
+      --rh-green-dim:#00a004;
+      --muted:#6b6b6b;
+      --border:#1e1e1e;
+      --text:#ffffff;
+    }
+    html, body { height:100%; margin:0; }
+    body {
+      background:var(--bg); color:var(--text);
+      font-family:"Press Start 2P", system-ui, sans-serif; font-size:11px;
+      display:flex; flex-direction:column; overflow:hidden;
+    }
+    .container { max-width:1040px; margin:0 auto; padding:0 20px; width:100%; box-sizing:border-box; }
+
+    nav { flex-shrink:0; background:var(--bg); border-bottom:2px solid var(--rh-green); padding:10px 0; }
+    .nav { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .logo { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:bold; letter-spacing:1px; }
+    .logo span { color:var(--text); }
+    .logo-canvas { width:32px; height:32px; image-rendering:pixelated; image-rendering:crisp-edges; background:var(--bg); }
+
+    .page { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:12px 0; }
+    .main-grid {
+      display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);
+      gap:clamp(16px,3vw,32px); align-items:center;
+    }
+
+    .brand-panel { text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+    .hero-pig-wrap { display:flex; justify-content:center; margin:0 0 8px; }
+    #hero-pig {
+      width:clamp(120px, 22vw, 200px); height:clamp(120px, 22vw, 200px);
+      image-rendering:pixelated; image-rendering:crisp-edges; background:var(--bg);
+    }
+    .brand-panel h1 {
+      font-size:clamp(20px, 3.8vw, 38px); margin:6px 0 0; letter-spacing:3px;
+      color:var(--text); text-shadow:3px 3px 0 var(--rh-green-dim); line-height:1.2;
+    }
+    .tag { display:inline-block; border:2px solid var(--rh-green); color:var(--rh-green); padding:3px 10px; font-size:8px; margin:0 0 6px; }
+    .x-link {
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
+      margin-top:8px; text-decoration:none; color:var(--text); font-size:8px; line-height:1;
+    }
+    .x-link:hover { color:var(--rh-green); }
+    .x-link:hover .x-pixel { filter:drop-shadow(0 0 6px rgba(0,200,5,0.45)); }
+    .x-pixel { width:16px; height:16px; flex-shrink:0; image-rendering:pixelated; image-rendering:crisp-edges; }
+    .x-handle { font-size:8px; }
+    .brand-sub { font-size:8px; margin:8px 0 0; color:var(--muted); line-height:1.5; }
+
+    .mint-section {
+      background:var(--card); border:2px solid var(--rh-green); padding:clamp(14px,2.5vw,22px);
+      margin:0; max-width:none;
+    }
+    .mint-head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:10px; }
+    .mint-head h2 { margin:0; font-size:11px; letter-spacing:1px; }
+    .mint-meta { font-size:7px; color:var(--muted); line-height:1.6; text-align:right; }
+    .mint-stats { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:8px; margin-bottom:8px; flex-wrap:wrap; }
+    .price-row { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin:8px 0; flex-wrap:wrap; }
+    .price { font-size:clamp(14px,2.2vw,20px); color:var(--rh-green); margin:0; line-height:1.3; }
+    .price small { display:block; font-size:7px; color:var(--muted); margin-top:4px; }
+    .cost { font-size:8px; margin:0; text-align:right; line-height:1.6; }
+    .cost .eth { color:var(--rh-green); font-size:10px; display:block; }
+
+    .controls { display:flex; gap:10px; align-items:center; margin:10px 0; }
+    .qty { display:flex; align-items:center; gap:6px; }
+    .qty button { width:34px; height:34px; font-size:14px; background:var(--card); color:var(--text); border:2px solid var(--border); cursor:pointer; padding:0; }
+    .qty button:hover { border-color:var(--rh-green); }
+    .qty span { min-width:40px; text-align:center; font-size:14px; }
+    .qty-label { font-size:8px; flex:1; }
+
+    .btn-row { display:grid; grid-template-columns:1fr; gap:6px; margin-top:8px; }
+    .btn {
+      background:var(--rh-green); color:#000; border:none; padding:12px 16px;
+      font-family:inherit; font-size:10px; font-weight:bold; cursor:pointer; width:100%; margin:0;
+    }
+    .btn:hover { background:var(--rh-green-dim); }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .btn-secondary { background:transparent; color:var(--text); border:2px solid var(--border); padding:9px 16px; font-size:8px; }
+    .btn-secondary:hover { border-color:var(--rh-green); background:transparent; color:var(--rh-green); }
+    .btn-wallet { padding:7px 12px; width:auto; font-size:8px; border:2px solid var(--rh-green); background:var(--rh-green); color:#000; }
+    .btn-wallet.is-connected { background:transparent; color:var(--rh-green); }
+    .btn-wallet.wrong-network { border-color:#ffaa00; color:#ffaa00; background:transparent; }
+    .network-pill { font-size:7px; margin-top:4px; text-align:right; min-height:12px; line-height:1.4; }
+    .wallet-hint { font-size:7px; opacity:0.65; display:block; margin-top:2px; }
+
+    .status-row { margin-top:10px; font-size:7px; line-height:1.5; }
+    .status { padding:8px; background:var(--bg); border:1px solid var(--border); font-size:7px; line-height:1.5; }
+    .connected { color:var(--rh-green); }
+    .warn { color:#ffaa00; }
+    .muted { color:var(--muted); }
+    .accent { color:var(--rh-green); }
+    #viewpig { display:none; font-size:7px; color:var(--rh-green); margin-top:6px; text-decoration:none; }
+    #viewpig:hover { text-decoration:underline; }
+
+    @media (max-width:720px) {
+      body { overflow-y:auto; height:auto; min-height:100dvh; }
+      .page { align-items:flex-start; padding:16px 0 24px; }
+      .main-grid { grid-template-columns:1fr; gap:20px; }
+      .mint-meta { text-align:left; }
+      .cost { text-align:left; }
+    }
+
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav">
+    <div class="logo">
+      <canvas id="logo-pig" class="logo-canvas" width="72" height="72"></canvas>
+      <span>PIXELPIGS</span>
+    </div>
+    <div style="text-align:right;">
+      <button id="wallet-btn" type="button" class="btn btn-wallet">CONNECT WALLET</button>
+      <div id="network-pill" class="network-pill muted"></div>
+    </div>
+  </div>
+</nav>
+
+<main class="page">
+  <div class="container main-grid">
+    <section class="brand-panel">
+      <div class="hero-pig-wrap">
+        <canvas id="hero-pig" width="72" height="72" aria-label="PixelPigs NFT mascot"></canvas>
+      </div>
+      <div class="tag" id="hero-tag">3,333</div>
+      <h1>PIXELPIGS</h1>
+      <a class="x-link" href="https://x.com/HoodPixelPigs" target="_blank" rel="noopener noreferrer" aria-label="PixelPigs on X @HoodPixelPigs">
+        <svg class="x-pixel" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges" aria-hidden="true">
+          <rect width="16" height="16" fill="none"/>
+          <g fill="currentColor">
+            <rect x="2" y="2" width="2" height="2"/><rect x="4" y="4" width="2" height="2"/><rect x="6" y="6" width="2" height="2"/>
+            <rect x="8" y="8" width="2" height="2"/><rect x="10" y="10" width="2" height="2"/><rect x="12" y="12" width="2" height="2"/>
+            <rect x="12" y="2" width="2" height="2"/><rect x="10" y="4" width="2" height="2"/><rect x="8" y="6" width="2" height="2"/>
+            <rect x="6" y="8" width="2" height="2"/><rect x="4" y="10" width="2" height="2"/><rect x="2" y="12" width="2" height="2"/>
+            <rect x="3" y="3" width="2" height="2"/><rect x="5" y="5" width="2" height="2"/><rect x="7" y="7" width="2" height="2"/>
+            <rect x="9" y="9" width="2" height="2"/><rect x="11" y="11" width="2" height="2"/>
+            <rect x="11" y="3" width="2" height="2"/><rect x="9" y="5" width="2" height="2"/><rect x="7" y="7" width="2" height="2"/>
+            <rect x="5" y="9" width="2" height="2"/><rect x="3" y="11" width="2" height="2"/>
+          </g>
+        </svg>
+        <span class="x-handle">@HoodPixelPigs</span>
+      </a>
+      <p class="brand-sub" id="hero-subtitle">Robinhood Chain • $1 in ETH</p>
+    </section>
+
+    <section class="mint-section">
+      <div class="mint-head">
+        <h2>MINT</h2>
+        <div class="mint-meta">3,333 supply<br>11 per wallet</div>
+      </div>
+
+      <div class="mint-stats">
+        <span class="accent" id="remaining-display">Left <span id="remaining">3333</span></span>
+        <span class="muted" id="user-limit">Max 11 per wallet</span>
+      </div>
+
+      <div class="price-row">
+        <div class="price" id="price-display">$1 USD <small>live ETH price</small></div>
+        <div class="cost">
+          <span class="eth" id="total-eth">≈ 0.00 ETH</span>
+          <span id="total-usd">≈ $1.00 USD</span>
+        </div>
+      </div>
+      <div class="muted" id="price-sync" style="display:none;font-size:7px;margin-bottom:6px;"></div>
+
+      <div class="controls">
+        <div class="qty">
+          <button type="button" onclick="changeQty(-1)">−</button>
+          <span id="quantity">1</span>
+          <button type="button" onclick="changeQty(1)">+</button>
+        </div>
+        <div class="qty-label">MINT <span id="qty-text">1</span> PIG<span id="s-text"></span></div>
+      </div>
+
+      <div class="btn-row">
+        <button id="mint-btn" type="button" class="btn" onclick="mint()">MINT NOW</button>
+        <button type="button" class="btn btn-secondary" onclick="switchToRobinhoodChain()">ADD ROBINHOOD CHAIN</button>
+      </div>
+
+      <div class="status-row">
+        <div class="status" id="status"></div>
+        <a id="viewpig" name="viewpig" href="#viewpig" target="_blank" rel="noopener">viewpig →</a>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+  // ==================== NFT MASCOT (PixelPig #0003 / 0003.png) ====================
+  const NFT_MASCOT_SRC = "https://pixelpigs.s3.filebase.io/images/0003.png";
+  const NFT_LOGIC_SIZE = 72;
+  const NFT_HERO_PX = 200;
+  const NFT_LOGO_PX = 72;
+  const NFT_MASCOT_BG = { r: 255, g: 188, b: 148 };
+  const NFT_KEY_HARD = 16;
+  const NFT_KEY_SOFT = 42;
+  let nftMascotImage = null;
+  let nftProcessedCanvas = null;
+
+  function mascotBgDistance(r, g, b, bg = NFT_MASCOT_BG) {
+    return Math.hypot(r - bg.r, g - bg.g, b - bg.b);
+  }
+
+  function sampleMascotBackground(imageData) {
+    const { width: w, height: h, data: d } = imageData;
+    const pts = [
+      0, 0, 1, 0, 0, 1,
+      w - 1, 0, w - 2, 0, w - 1, 1,
+      0, h - 1, 1, h - 1, 0, h - 2,
+      w - 1, h - 1, w - 2, h - 1, w - 1, h - 2,
+    ];
+    let sr = 0, sg = 0, sb = 0, n = 0;
+    for (let i = 0; i < pts.length; i += 2) {
+      const idx = (pts[i + 1] * w + pts[i]) * 4;
+      sr += d[idx];
+      sg += d[idx + 1];
+      sb += d[idx + 2];
+      n++;
+    }
+    return { r: Math.round(sr / n), g: Math.round(sg / n), b: Math.round(sb / n) };
+  }
+
+  function keyOutNftBackground(imageData) {
+    const bg = sampleMascotBackground(imageData);
+    const d = imageData.data;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      const isBlueBg = b > 100 && g > 60 && r < 100;
+      const dist = mascotBgDistance(r, g, b, bg);
+      if (isBlueBg || dist <= NFT_KEY_HARD) {
+        d[i] = 0;
+        d[i + 1] = 0;
+        d[i + 2] = 0;
+        d[i + 3] = 255;
+        continue;
+      }
+      if (dist <= NFT_KEY_SOFT) {
+        const t = (dist - NFT_KEY_HARD) / (NFT_KEY_SOFT - NFT_KEY_HARD);
+        d[i] = Math.round(r * t);
+        d[i + 1] = Math.round(g * t);
+        d[i + 2] = Math.round(b * t);
+      }
+    }
+    return imageData;
+  }
+
+  function buildProcessedMascot() {
+    if (!nftMascotImage) return null;
+    const sw = nftMascotImage.naturalWidth;
+    const sh = nftMascotImage.naturalHeight;
+    const off = document.createElement("canvas");
+    off.width = sw;
+    off.height = sh;
+    const octx = off.getContext("2d");
+    octx.imageSmoothingEnabled = false;
+    octx.drawImage(nftMascotImage, 0, 0);
+    const keyed = keyOutNftBackground(octx.getImageData(0, 0, sw, sh));
+    octx.putImageData(keyed, 0, 0);
+    nftProcessedCanvas = off;
+    return off;
+  }
+
+  // Hearts eyes — generate.py draw_eyes("Hearts") at (29,24) and (43,24)
+  const NFT_EYE_LIDS = [
+    { x: 27, y: 22, w: 5, h: 4 },
+    { x: 41, y: 22, w: 5, h: 4 },
+  ];
+
+  function preloadNftMascot() {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => { nftMascotImage = img; resolve(); };
+      img.onerror = () => reject(new Error("Could not load NFT mascot"));
+      img.src = NFT_MASCOT_SRC;
+    });
+  }
+
+  function drawNftMascot(canvas, blink = false) {
+    const src = nftProcessedCanvas || buildProcessedMascot();
+    if (!src) return;
+
+    const ctx = canvas.getContext("2d");
+    const outSize = canvas.id === "hero-pig" ? NFT_HERO_PX : NFT_LOGO_PX;
+    const scale = outSize / NFT_LOGIC_SIZE;
+
+    ctx.imageSmoothingEnabled = false;
+    canvas.width = outSize;
+    canvas.height = outSize;
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(0, 0, outSize, outSize);
+    ctx.drawImage(src, 0, 0, outSize, outSize);
+
+    if (blink) {
+      for (const eye of NFT_EYE_LIDS) {
+        ctx.fillStyle = "#2a1c14";
+        ctx.fillRect(
+          Math.round(eye.x * scale),
+          Math.round((eye.y + 1) * scale),
+          Math.max(1, Math.round(eye.w * scale)),
+          Math.max(1, Math.round(3 * scale))
+        );
+      }
+    }
+  }
+
+  function blinkNftCanvas(canvas, durationMs = 140) {
+    drawNftMascot(canvas, true);
+    setTimeout(() => drawNftMascot(canvas, false), durationMs);
+  }
+
+  function scheduleNftBlink(canvas, minMs, maxMs) {
+    const tick = () => {
+      blinkNftCanvas(canvas);
+      setTimeout(tick, minMs + Math.random() * (maxMs - minMs));
+    };
+    setTimeout(tick, 1500 + Math.random() * 2000);
+  }
+
+  function initPixelPigs() {
+    const heroCanvas = document.getElementById("hero-pig");
+    const logoCanvas = document.getElementById("logo-pig");
+
+    preloadNftMascot().then(() => {
+      buildProcessedMascot();
+      drawNftMascot(heroCanvas);
+      drawNftMascot(logoCanvas);
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      scheduleNftBlink(heroCanvas, 2800, 5200);
+      scheduleNftBlink(logoCanvas, 3200, 6000);
+    }).catch((err) => console.warn("NFT mascot load failed", err));
+  }
+
+  // ==================== CONFIG ====================
+  const TESTNET_MODE = false;
+  const NETWORK = TESTNET_MODE ? {
+    chainId: 46630,
+    chainIdHex: "0xb626",
+    name: "Robinhood Chain Testnet",
+    rpc: "https://rpc.testnet.chain.robinhood.com",
+    explorer: "https://explorer.testnet.chain.robinhood.com",
+    tag: "TESTNET • CHEAP MINTS",
+    subtitle: "Robinhood Testnet • cheap test mints",
+    defaultMaxWallet: 3333,
+  } : {
+    chainId: 4663,
+    chainIdHex: "0x1237",
+    name: "Robinhood Chain",
+    rpc: "https://rpc.mainnet.chain.robinhood.com",
+    explorer: "https://robinhoodchain.blockscout.com",
+    tag: "3,333",
+    subtitle: "Robinhood Chain • $1 in ETH",
+    defaultMaxWallet: 11,
+  };
+
+  const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+  const CONTRACT_LIVE = !CONTRACT_ADDRESS.startsWith("0x0000");
+  let MAX_SUPPLY = 3333;
+  let MAX_PER_WALLET = NETWORK.defaultMaxWallet;
+  const CHAIN_ID = NETWORK.chainId;
+  const CHAIN_NAME = NETWORK.name;
+  const RPC_URL = NETWORK.rpc;
+  const EXPLORER_URL = NETWORK.explorer;
+  const METADATA_BASE_URI = "https://pixelpigs.s3.filebase.io/metadata/";
+  const IMAGES_BASE_URI = "https://pixelpigs.s3.filebase.io/images/";
+  const HOSTED_TOKENS = 3333; // full collection on Filebase Pro
+
+  const PAYMENT_RECEIVER = "0x3724ce5Baf71773aCCf77213cbe2EcDDbF81fdb0";
+  const MINT_USD = 1;
+  const ETH_USD_POLL_MS = 60000;
+
+  let walletProvider = null; // injected EIP-1193 provider
+  let provider;
+  let signer;
+  let currentPriceEth = 0;
+  let liveEthPerPig = 0;
+  let quantity = 1;
+  let ethPriceUsd = 0;
+  let pricePollTimer = null;
+
+  // On-chain state
+  let remaining = MAX_SUPPLY;
+  let userMinted = 0;
+  let userAddress = null;
+  let userDisconnected = sessionStorage.getItem("pixelpigs_wallet_off") === "1";
+
+  const eip6963Providers = [];
+
+  // Discover wallets (MetaMask, Rabby, Coinbase, etc.)
+  window.addEventListener("eip6963:announceProvider", (event) => {
+    if (event.detail?.provider) eip6963Providers.push(event.detail);
+  });
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+  function getWalletProvider() {
+    if (walletProvider) return walletProvider;
+
+    if (window.ethereum?.providers?.length) {
+      const metamask = window.ethereum.providers.find((p) => p.isMetaMask);
+      return metamask || window.ethereum.providers[0];
+    }
+    if (window.ethereum) return window.ethereum;
+    if (window.rabby) return window.rabby;
+    if (window.coinbaseWalletExtension) return window.coinbaseWalletExtension;
+
+    if (eip6963Providers.length === 1) return eip6963Providers[0].provider;
+    if (eip6963Providers.length > 1) {
+      const names = eip6963Providers.map((p) => p.info?.name || "Wallet").join(", ");
+      const pick = prompt(`Multiple wallets found: ${names}\n\nType the number to use:\n` +
+        eip6963Providers.map((p, i) => `${i + 1}. ${p.info?.name || "Wallet"}`).join("\n"), "1");
+      const idx = Number(pick) - 1;
+      if (idx >= 0 && idx < eip6963Providers.length) return eip6963Providers[idx].provider;
+      return eip6963Providers[0].provider;
+    }
+    return null;
+  }
+
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+      || (navigator.maxTouchPoints > 1 && window.innerWidth < 900);
+  }
+
+  function walletHelpMessage() {
+    if (location.protocol === "file:") {
+      return "Open the live mint site in your wallet browser:\n\nhttps://pixelpigs.s3.filebase.io/site/index.html";
+    }
+
+    if (isMobileDevice()) {
+      return "No wallet on this browser.\n\n"
+        + "On mobile, open this page inside a wallet app:\n\n"
+        + "• Robinhood Wallet — use its Web3 browser\n"
+        + "• MetaMask — Menu → Browser → open this site\n\n"
+        + "Phone browsers (Chrome, Safari) can't connect on their own.\n\n"
+        + "Then tap CONNECT WALLET again.";
+    }
+
+    return "No wallet on this browser.\n\n"
+      + "On desktop, install a wallet extension:\n\n"
+      + "• MetaMask — https://metamask.io\n"
+      + "• Rabby, Coinbase Wallet, or Brave Wallet\n\n"
+      + "Refresh the page, then tap CONNECT WALLET.";
+  }
+
+  const ROBINHOOD_CHAIN = {
+    chainId: NETWORK.chainIdHex,
+    chainName: CHAIN_NAME,
+    nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+    rpcUrls: [RPC_URL],
+    blockExplorerUrls: [EXPLORER_URL]
+  };
+
+  function setViewPig(txHash) {
+    const link = document.getElementById("viewpig");
+    link.href = `${EXPLORER_URL}/tx/${txHash}`;
+    link.style.display = "inline-block";
+  }
+
+  function hideViewPig() {
+    const link = document.getElementById("viewpig");
+    link.style.display = "none";
+    link.href = "#viewpig";
+  }
+
+  function shortAddress(addr) {
+    return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+  }
+
+  function clearWalletSession() {
+    signer = null;
+    userAddress = null;
+    userMinted = 0;
+    updateWalletUI();
+    updateUserLimitDisplay();
+    updateQuantityLimits();
+  }
+
+  function disconnectWallet() {
+    userDisconnected = true;
+    sessionStorage.setItem("pixelpigs_wallet_off", "1");
+    clearWalletSession();
+    updateContractStatus();
+    const wp = walletProvider || getWalletProvider();
+    if (wp?.request) {
+      wp.request({
+        method: "wallet_revokePermissions",
+        params: [{ eth_accounts: {} }],
+      }).catch(() => {});
+    }
+  }
+
+  async function toggleWallet() {
+    if (userAddress) {
+      disconnectWallet();
+      return;
+    }
+    await connectWallet();
+  }
+
+  async function getConnectedChainId() {
+    if (!walletProvider) return null;
+    try {
+      const hex = await walletProvider.request({ method: "eth_chainId" });
+      return Number(hex);
+    } catch {
+      return null;
+    }
+  }
+
+  function updateWalletUI() {
+    const btn = document.getElementById("wallet-btn");
+    const pill = document.getElementById("network-pill");
+
+    btn.classList.remove("is-connected", "wrong-network");
+
+    if (!userAddress) {
+      btn.textContent = "CONNECT WALLET";
+      btn.title = "Tap to connect";
+      pill.innerHTML = `<span class="wallet-hint muted">tap to connect</span>`;
+      return;
+    }
+
+    btn.textContent = shortAddress(userAddress);
+    btn.classList.add("is-connected");
+    btn.title = "Tap to disconnect";
+
+    getConnectedChainId().then((chainId) => {
+      const hint = `<span class="wallet-hint muted">tap to disconnect</span>`;
+      if (chainId === CHAIN_ID) {
+        pill.innerHTML = `<span class="connected">● ${CHAIN_NAME}</span>${hint}`;
+        btn.classList.remove("wrong-network");
+      } else if (chainId) {
+        pill.innerHTML = `<span class="warn">● Switch to ${CHAIN_NAME}</span>${hint}`;
+        btn.classList.add("wrong-network");
+      } else {
+        pill.innerHTML = hint;
+      }
+    });
+  }
+
+  function updateContractStatus(extraHtml = "") {
+    const el = document.getElementById("status");
+    if (!CONTRACT_LIVE) {
+      el.innerHTML = `<span class="muted">Mint opens when mainnet contract is live.</span>`;
+      if (extraHtml) el.innerHTML += `<br>${extraHtml}`;
+      return;
+    }
+    el.innerHTML =
+      `Contract: <a href="${EXPLORER_URL}/address/${CONTRACT_ADDRESS}" target="_blank" rel="noopener" style="color:#00C805">${shortAddress(CONTRACT_ADDRESS)}</a>`;
+    if (extraHtml) el.innerHTML += `<br>${extraHtml}`;
+  }
+
+  function updateMintButtonState() {
+    const btn = document.getElementById("mint-btn");
+    if (!CONTRACT_LIVE) {
+      btn.disabled = true;
+      btn.textContent = "COMING SOON";
+      return;
+    }
+    const soldOut = remaining <= 0;
+    btn.disabled = soldOut;
+    if (!soldOut && btn.textContent !== "CONFIRM IN WALLET..." && btn.textContent !== "MINT MORE") {
+      btn.textContent = "MINT NOW";
+    }
+    if (soldOut) btn.textContent = "SOLD OUT";
+  }
+
+  function setupWalletListeners() {
+    walletProvider = getWalletProvider();
+    if (!walletProvider?.on) return;
+
+    walletProvider.on("accountsChanged", (accounts) => {
+      if (!accounts?.length) {
+        userDisconnected = true;
+        sessionStorage.setItem("pixelpigs_wallet_off", "1");
+        clearWalletSession();
+        return;
+      }
+      userDisconnected = false;
+      sessionStorage.removeItem("pixelpigs_wallet_off");
+      userAddress = accounts[0];
+      provider = new ethers.BrowserProvider(walletProvider);
+      provider.getSigner().then(async (s) => {
+        signer = s;
+        await refreshUserMinted();
+        updateWalletUI();
+      }).catch(clearWalletSession);
+    });
+
+    walletProvider.on("chainChanged", () => {
+      window.location.reload();
+    });
+  }
+
+  async function checkWalletConnection() {
+    if (userDisconnected) {
+      updateWalletUI();
+      return;
+    }
+
+    walletProvider = getWalletProvider();
+    if (!walletProvider) {
+      updateWalletUI();
+      return;
+    }
+
+    try {
+      const accounts = await walletProvider.request({ method: "eth_accounts" });
+      if (!accounts?.length) {
+        clearWalletSession();
+        return;
+      }
+      provider = new ethers.BrowserProvider(walletProvider);
+      signer = await provider.getSigner();
+      userAddress = accounts[0];
+      await refreshUserMinted();
+    } catch {
+      clearWalletSession();
+    }
+    updateWalletUI();
+  }
+
+  const CONTRACT_ABI = [
+    "function mint(uint256 quantity) payable",
+    "function MINT_PRICE() view returns (uint256)",
+    "function MAX_SUPPLY() view returns (uint256)",
+    "function MAX_PER_WALLET() view returns (uint256)",
+    "function totalSupply() view returns (uint256)",
+    "function remainingSupply() view returns (uint256)",
+    "function mintedByAddress(address) view returns (uint256)",
+    "function tokenURI(uint256) view returns (string)"
+  ];
+
+  const publicProvider = new ethers.JsonRpcProvider(RPC_URL);
+  let mintPriceWei = 0n;
+  let supplyPollTimer = null;
+
+  function getReadContract() {
+    return new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, publicProvider);
+  }
+
+  async function fetchEthUsd() {
+    const sources = [
+      async () => {
+        const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
+        const j = await r.json();
+        const p = j?.ethereum?.usd;
+        if (!p) throw new Error("CoinGecko");
+        return Number(p);
+      },
+      async () => {
+        const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT");
+        const j = await r.json();
+        const p = Number(j?.price);
+        if (!p) throw new Error("Binance");
+        return p;
+      },
+    ];
+    for (const fn of sources) {
+      try {
+        ethPriceUsd = await fn();
+        liveEthPerPig = MINT_USD / ethPriceUsd;
+        return ethPriceUsd;
+      } catch (e) {
+        console.warn("ETH/USD fetch failed", e);
+      }
+    }
+    return 0;
+  }
+
+  async function fetchMintPrice() {
+    try {
+      const contract = getReadContract();
+      mintPriceWei = await contract.MINT_PRICE();
+      currentPriceEth = Number(ethers.formatEther(mintPriceWei));
+      return currentPriceEth;
+    } catch (e) {
+      console.warn("Could not read MINT_PRICE, using fallback", e);
+      if (!TESTNET_MODE && liveEthPerPig > 0) {
+        currentPriceEth = liveEthPerPig;
+        mintPriceWei = ethers.parseEther(liveEthPerPig.toFixed(18));
+      } else {
+        currentPriceEth = 0.000001;
+        mintPriceWei = ethers.parseEther("0.000001");
+      }
+      return currentPriceEth;
+    }
+  }
+
+  function updateRemainingDisplay() {
+    document.getElementById("remaining").textContent = CONTRACT_LIVE ? remaining : "—";
+    updateMintButtonState();
+  }
+
+  function updateUserLimitDisplay() {
+    const left = Math.max(0, MAX_PER_WALLET - userMinted);
+    const el = document.getElementById("user-limit");
+    if (!userAddress) {
+      el.textContent = `Max ${MAX_PER_WALLET} per wallet`;
+      return;
+    }
+    el.textContent = left > 0
+      ? `You can mint ${left} more (max ${MAX_PER_WALLET} per wallet)`
+      : `Wallet limit reached (${MAX_PER_WALLET} max)`;
+  }
+
+  async function refreshSupply() {
+    if (CONTRACT_ADDRESS.startsWith("0x0000")) return;
+    try {
+      const contract = getReadContract();
+      const [max, rem, perWallet] = await Promise.all([
+        contract.MAX_SUPPLY(),
+        contract.remainingSupply(),
+        contract.MAX_PER_WALLET().catch(() => 3333n),
+      ]);
+      MAX_SUPPLY = Number(max);
+      remaining = Number(rem);
+      MAX_PER_WALLET = Number(perWallet);
+      updateRemainingDisplay();
+      updateQuantityLimits();
+      updateUserLimitDisplay();
+    } catch (err) {
+      console.warn("Could not refresh supply", err);
+    }
+  }
+
+  async function refreshUserMinted() {
+    if (!userAddress) return;
+    try {
+      const contract = provider
+        ? new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider)
+        : getReadContract();
+      userMinted = Number(await contract.mintedByAddress(userAddress));
+      updateUserLimitDisplay();
+      updateQuantityLimits();
+    } catch (err) {
+      console.warn("Could not refresh wallet mint count", err);
+    }
+  }
+
+  function updatePriceSyncNote() {
+    const el = document.getElementById("price-sync");
+    if (TESTNET_MODE || !ethPriceUsd || !currentPriceEth) {
+      el.style.display = "none";
+      return;
+    }
+    const drift = Math.abs(currentPriceEth - liveEthPerPig) / liveEthPerPig;
+    if (drift > 0.05) {
+      el.style.display = "block";
+      el.textContent = `On-chain ${currentPriceEth.toFixed(6)} ETH — run price sync before mint`;
+    } else {
+      el.style.display = "none";
+    }
+  }
+
+  function updatePriceDisplay() {
+    const priceEl = document.getElementById("price-display");
+
+    if (!TESTNET_MODE && ethPriceUsd > 0) {
+      priceEl.innerHTML =
+        `$${MINT_USD.toFixed(2)} USD <small>≈ ${liveEthPerPig.toFixed(6)} ETH live</small>`;
+      updatePriceSyncNote();
+      updateTotal();
+      return;
+    }
+
+    if (!currentPriceEth) return;
+    priceEl.innerHTML =
+      `${currentPriceEth.toFixed(6)} ETH <small>per pig (from contract)</small>`;
+    document.getElementById("price-sync").style.display = "none";
+    updateTotal();
+  }
+
+  function updateTotal() {
+    const perPigEth = mintPriceWei
+      ? Number(ethers.formatEther(mintPriceWei))
+      : (currentPriceEth || liveEthPerPig);
+    const totalEth = (perPigEth * quantity).toFixed(8);
+
+    document.getElementById("total-eth").textContent = `≈ ${totalEth} ETH`;
+    if (!TESTNET_MODE) {
+      document.getElementById("total-usd").textContent = `≈ $${(MINT_USD * quantity).toFixed(2)} USD`;
+    } else {
+      document.getElementById("total-usd").textContent = ethPriceUsd
+        ? `≈ $${(currentPriceEth * quantity * ethPriceUsd).toFixed(2)} USD`
+        : `≈ $${quantity.toFixed(2)} USD`;
+    }
+    document.getElementById("qty-text").textContent = quantity;
+    document.getElementById("s-text").textContent = quantity > 1 ? "S" : "";
+  }
+
+  function maxMintable() {
+    if (remaining <= 0) return 0;
+    const walletLeft = userAddress ? Math.max(0, MAX_PER_WALLET - userMinted) : MAX_PER_WALLET;
+    return Math.max(0, Math.min(remaining, walletLeft));
+  }
+
+  function updateQuantityLimits() {
+    const maxPossible = maxMintable();
+    if (maxPossible === 0) {
+      quantity = 1;
+    } else {
+      quantity = Math.max(1, Math.min(quantity, maxPossible));
+    }
+    document.getElementById("quantity").textContent = quantity;
+    updateTotal();
+  }
+
+  function changeQty(delta) {
+    const maxPossible = maxMintable();
+    if (maxPossible === 0) return;
+    quantity = Math.max(1, Math.min(maxPossible, quantity + delta));
+    document.getElementById("quantity").textContent = quantity;
+    updateTotal();
+  }
+
+  function parseMintError(err) {
+    if (!err) return "Mint failed";
+    const candidates = [
+      err.reason,
+      err.shortMessage,
+      err.info?.error?.message,
+      err.data?.message,
+      err.message,
+    ].filter(Boolean);
+    let msg = candidates[0] || "Mint failed";
+    if (msg.includes("missing revert data") || msg.includes("CALL_EXCEPTION")) {
+      return `Transaction would fail. Check: (1) ${CHAIN_NAME} selected, (2) enough ETH for ${currentPriceEth} ETH × ${quantity} pig(s), (3) wallet under ${MAX_PER_WALLET} minted.`;
+    }
+    if (msg.includes("Insufficient ETH")) {
+      return `Need at least ${(currentPriceEth * quantity).toFixed(4)} ETH (${currentPriceEth} ETH per pig).`;
+    }
+    if (msg.includes("Wallet limit")) return `Max ${MAX_PER_WALLET} pigs per wallet.`;
+    if (msg.includes("Sold out")) return "Collection sold out.";
+    if (msg.includes("user rejected") || msg.includes("User denied")) return "Cancelled in wallet.";
+    return msg;
+  }
+
+  async function switchToRobinhoodChain() {
+    const eth = getWalletProvider();
+    if (!eth) {
+      alert(walletHelpMessage());
+      return;
+    }
+    try {
+      await eth.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: ROBINHOOD_CHAIN.chainId }]
+      });
+    } catch (err) {
+      if (err.code === 4902) {
+        await eth.request({
+          method: "wallet_addEthereumChain",
+          params: [ROBINHOOD_CHAIN]
+        });
+      } else {
+        alert("Could not switch network: " + (err.message || err));
+      }
+    }
+  }
+
+  // ==================== WALLET & MINT ====================
+  async function connectWallet() {
+    walletProvider = getWalletProvider();
+    if (!walletProvider) {
+      alert(walletHelpMessage());
+      return false;
+    }
+
+    userDisconnected = false;
+    sessionStorage.removeItem("pixelpigs_wallet_off");
+    setupWalletListeners();
+
+    try {
+      await walletProvider.request({ method: "eth_requestAccounts" });
+      provider = new ethers.BrowserProvider(walletProvider);
+      signer = await provider.getSigner();
+      userAddress = await signer.getAddress();
+
+      updateWalletUI();
+      if (CONTRACT_LIVE) await refreshSupply();
+      await refreshUserMinted();
+      return true;
+    } catch (err) {
+      if (err?.code === 4001) return false;
+      alert("Failed to connect wallet: " + (err.message || err));
+      return false;
+    }
+  }
+
+  async function mint() {
+    if (!CONTRACT_LIVE) return;
+
+    if (!signer || !userAddress) {
+      const connected = await connectWallet();
+      if (!connected) return;
+    }
+
+    const network = await provider.getNetwork();
+    if (network.chainId !== BigInt(CHAIN_ID)) {
+      alert(`Switch your wallet to ${CHAIN_NAME} (chain ${CHAIN_ID}) first.`);
+      return;
+    }
+
+    if (!mintPriceWei) await fetchMintPrice();
+    await refreshSupply();
+    await refreshUserMinted();
+
+    if (remaining <= 0) {
+      alert("Sold out.");
+      return;
+    }
+    if (maxMintable() <= 0) {
+      alert(`Wallet limit reached (max ${MAX_PER_WALLET} pigs).`);
+      return;
+    }
+
+    const value = mintPriceWei * BigInt(quantity);
+    const balance = await provider.getBalance(userAddress);
+    if (balance < value) {
+      alert(`Need ${ethers.formatEther(value)} ETH to mint. You have ${ethers.formatEther(balance)} ETH.`);
+      return;
+    }
+
+    const btn = document.getElementById("mint-btn");
+    btn.disabled = true;
+    btn.textContent = "CONFIRM IN WALLET...";
+
+    try {
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      await contract.mint.staticCall(quantity, { value });
+      const tx = await contract.mint(quantity, { value });
+
+      setViewPig(tx.hash);
+      updateContractStatus(`⏳ Confirming mint…`);
+
+      await tx.wait();
+
+      updateContractStatus(`<span class="connected">✅ Minted ${quantity} PixelPig(s)!</span>`);
+      updateWalletUI();
+
+      await refreshSupply();
+      await refreshUserMinted();
+      btn.textContent = remaining > 0 && maxMintable() > 0 ? "MINT MORE" : "SOLD OUT";
+      btn.disabled = remaining <= 0 || maxMintable() <= 0;
+    } catch (err) {
+      console.error(err);
+      alert(parseMintError(err));
+      btn.disabled = remaining <= 0;
+      btn.textContent = remaining <= 0 ? "SOLD OUT" : "MINT NOW";
+    }
+  }
+
+  // ==================== INIT ====================
+  async function init() {
+    initPixelPigs();
+    hideViewPig();
+    document.getElementById("hero-tag").textContent = NETWORK.tag;
+    document.getElementById("hero-subtitle").textContent = NETWORK.subtitle;
+    document.getElementById("quantity").textContent = quantity;
+
+    document.getElementById("wallet-btn").addEventListener("click", toggleWallet);
+    setupWalletListeners();
+    await checkWalletConnection();
+
+    await fetchEthUsd();
+    if (CONTRACT_LIVE) await fetchMintPrice();
+    updatePriceDisplay();
+    updateContractStatus();
+    updateMintButtonState();
+    if (CONTRACT_LIVE) await refreshSupply();
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "+") changeQty(1);
+      if (e.key === "-") changeQty(-1);
+    });
+
+    if (CONTRACT_LIVE) {
+      supplyPollTimer = setInterval(refreshSupply, 12000);
+    }
+    pricePollTimer = setInterval(async () => {
+      await fetchEthUsd();
+      if (CONTRACT_LIVE) await fetchMintPrice();
+      updatePriceDisplay();
+    }, ETH_USD_POLL_MS);
+  }
+
+  window.onload = init;
+</script>
+</body>
+</html>
