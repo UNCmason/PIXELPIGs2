@@ -765,6 +765,18 @@
     }
   }
 
+  function perPigEthAmount() {
+    if (mintPriceWei) return Number(ethers.formatEther(mintPriceWei));
+    if (currentPriceEth > 0) return currentPriceEth;
+    return liveEthPerPig;
+  }
+
+  function formatEthAmount(eth) {
+    if (!Number.isFinite(eth) || eth <= 0) return "0";
+    if (eth < 0.0001) return eth.toFixed(8).replace(/\.?0+$/, "");
+    return eth.toFixed(6).replace(/\.?0+$/, "");
+  }
+
   function updatePriceSyncNote() {
     const el = document.getElementById("price-sync");
     if (TESTNET_MODE || !ethPriceUsd || !currentPriceEth) {
@@ -774,7 +786,10 @@
     const drift = Math.abs(currentPriceEth - liveEthPerPig) / liveEthPerPig;
     if (drift > 0.05) {
       el.style.display = "block";
-      el.textContent = `On-chain ${currentPriceEth.toFixed(6)} ETH — run price sync before mint`;
+      const usdNow = currentPriceEth * ethPriceUsd;
+      el.textContent =
+        `Mint price is ${formatEthAmount(currentPriceEth)} ETH (~$${usdNow.toFixed(2)}). ` +
+        `Target ~$${MINT_USD.toFixed(2)} — call setMintPrice from payment wallet.`;
     } else {
       el.style.display = "none";
     }
@@ -782,10 +797,12 @@
 
   function updatePriceDisplay() {
     const priceEl = document.getElementById("price-display");
+    const perPig = perPigEthAmount();
 
-    if (!TESTNET_MODE && ethPriceUsd > 0) {
+    if (!TESTNET_MODE && ethPriceUsd > 0 && perPig > 0) {
+      const usdPerPig = perPig * ethPriceUsd;
       priceEl.innerHTML =
-        `$${MINT_USD.toFixed(2)} USD <small>≈ ${liveEthPerPig.toFixed(6)} ETH live</small>`;
+        `≈ $${usdPerPig.toFixed(2)} USD <small>${formatEthAmount(perPig)} ETH per pig</small>`;
       updatePriceSyncNote();
       updateTotal();
       return;
@@ -793,24 +810,24 @@
 
     if (!currentPriceEth) return;
     priceEl.innerHTML =
-      `${currentPriceEth.toFixed(6)} ETH <small>per pig (from contract)</small>`;
+      `${formatEthAmount(currentPriceEth)} ETH <small>per pig (from contract)</small>`;
     document.getElementById("price-sync").style.display = "none";
     updateTotal();
   }
 
   function updateTotal() {
-    const perPigEth = mintPriceWei
-      ? Number(ethers.formatEther(mintPriceWei))
-      : (currentPriceEth || liveEthPerPig);
-    const totalEth = (perPigEth * quantity).toFixed(8);
+    const perPigEth = perPigEthAmount();
+    const totalEth = perPigEth * quantity;
 
-    document.getElementById("total-eth").textContent = `≈ ${totalEth} ETH`;
-    if (!TESTNET_MODE) {
-      document.getElementById("total-usd").textContent = `≈ $${(MINT_USD * quantity).toFixed(2)} USD`;
+    document.getElementById("total-eth").textContent = `≈ ${formatEthAmount(totalEth)} ETH`;
+    if (ethPriceUsd > 0 && totalEth > 0) {
+      document.getElementById("total-usd").textContent =
+        `≈ $${(totalEth * ethPriceUsd).toFixed(2)} USD`;
+    } else if (!TESTNET_MODE) {
+      document.getElementById("total-usd").textContent =
+        `≈ $${(MINT_USD * quantity).toFixed(2)} USD`;
     } else {
-      document.getElementById("total-usd").textContent = ethPriceUsd
-        ? `≈ $${(currentPriceEth * quantity * ethPriceUsd).toFixed(2)} USD`
-        : `≈ $${quantity.toFixed(2)} USD`;
+      document.getElementById("total-usd").textContent = `≈ $${quantity.toFixed(2)} USD`;
     }
     document.getElementById("qty-text").textContent = quantity;
     document.getElementById("s-text").textContent = quantity > 1 ? "S" : "";
