@@ -396,6 +396,7 @@
   const PAYMENT_RECEIVER = "0x3724ce5Baf71773aCCf77213cbe2EcDDbF81fdb0";
   const MINT_USD = 1;
   const ETH_USD_POLL_MS = 60000;
+  const GAS_BUFFER_ETH = 0.00015;
 
   let walletProvider = null; // injected EIP-1193 provider
   let provider;
@@ -872,7 +873,11 @@
       return `Transaction would fail. Check: (1) ${CHAIN_NAME} selected, (2) enough ETH for ${currentPriceEth} ETH × ${quantity} pig(s), (3) wallet under ${MAX_PER_WALLET} minted.`;
     }
     if (msg.includes("Insufficient ETH")) {
-      return `Need at least ${(currentPriceEth * quantity).toFixed(4)} ETH (${currentPriceEth} ETH per pig).`;
+      return `Need at least ${(currentPriceEth * quantity).toFixed(6)} ETH for the mint (${formatEthAmount(currentPriceEth)} per pig).`;
+    }
+    if (/insufficient funds/i.test(msg)) {
+      const mintCost = perPigEthAmount() * quantity;
+      return `Not enough ETH for mint + gas. Need ~${formatEthAmount(mintCost)} ETH for ${quantity} pig(s) plus ~${GAS_BUFFER_ETH} ETH gas. Add a little more ETH to your wallet.`;
     }
     if (msg.includes("Wallet limit")) return `Max ${MAX_PER_WALLET} pigs per wallet.`;
     if (msg.includes("Sold out")) return "Collection sold out.";
@@ -960,9 +965,13 @@
     }
 
     const value = mintPriceWei * BigInt(quantity);
+    const gasBuffer = ethers.parseEther(String(GAS_BUFFER_ETH));
     const balance = await provider.getBalance(userAddress);
-    if (balance < value) {
-      alert(`Need ${ethers.formatEther(value)} ETH to mint. You have ${ethers.formatEther(balance)} ETH.`);
+    if (balance < value + gasBuffer) {
+      alert(
+        `Need ${formatEthAmount(Number(ethers.formatEther(value)))} ETH to mint ${quantity} pig(s) ` +
+        `plus ~${GAS_BUFFER_ETH} ETH for gas.\n\nYou have ${formatEthAmount(Number(ethers.formatEther(balance)))} ETH.`
+      );
       return;
     }
 
@@ -970,10 +979,11 @@
     btn.disabled = true;
     btn.textContent = "CONFIRM IN WALLET...";
 
+    let submittedTx = null;
     try {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      await contract.mint.staticCall(quantity, { value });
       const tx = await contract.mint(quantity, { value });
+      submittedTx = tx;
 
       setViewPig(tx.hash);
       updateContractStatus(`⏳ Confirming mint…`);
@@ -989,6 +999,22 @@
       btn.disabled = remaining <= 0 || maxMintable() <= 0;
     } catch (err) {
       console.error(err);
+      if (submittedTx?.hash) {
+        try {
+          const receipt = await provider.waitForTransaction(submittedTx.hash, 1, 120000);
+          if (receipt?.status === 1) {
+            updateContractStatus(`<span class="connected">✅ Minted ${quantity} PixelPig(s)!</span>`);
+            updateWalletUI();
+            await refreshSupply();
+            await refreshUserMinted();
+            btn.textContent = remaining > 0 && maxMintable() > 0 ? "MINT MORE" : "SOLD OUT";
+            btn.disabled = remaining <= 0 || maxMintable() <= 0;
+            return;
+          }
+        } catch (waitErr) {
+          console.warn("Receipt check after mint error", waitErr);
+        }
+      }
       alert(parseMintError(err));
       btn.disabled = remaining <= 0;
       btn.textContent = remaining <= 0 ? "SOLD OUT" : "MINT NOW";
