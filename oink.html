@@ -151,6 +151,7 @@
 <script>
   const PIGS_ADDRESS = "0xc51e0a920133D1491Db4ee4BA461e0BE77B4b3b8";
   const OINK_ADDRESS = "0xF2c5F81F291E80BFC59e66E6D027C23471ED745b";
+  const OINK_LOGO_URL = new URL("oink-logo.png", window.location.href).href;
   const CLAIM_ADDRESS = "0x51fA1E5fD4B0B2F0318B0cE712d1958010A4265f";
   const RPC_URL = "https://rpc.mainnet.chain.robinhood.com";
   const CHAIN_ID = 4663;
@@ -306,6 +307,27 @@
     document.getElementById("claim-btn").textContent = "CLAIM OINK";
   }
 
+  async function suggestOinkInWallet(eth) {
+    if (sessionStorage.getItem("oink-watch-asset")) return;
+    try {
+      await eth.request({
+        method: "wallet_watchAsset",
+        params: {
+          type: "ERC20",
+          options: {
+            address: OINK_ADDRESS,
+            symbol: "OINK",
+            decimals: 18,
+            image: OINK_LOGO_URL,
+          },
+        },
+      });
+      sessionStorage.setItem("oink-watch-asset", "1");
+    } catch (_) {
+      /* user dismissed or wallet unsupported */
+    }
+  }
+
   async function ensureChain(eth) {
     const chain = await eth.request({ method: "eth_chainId" });
     if (parseInt(chain, 16) !== CHAIN_ID) {
@@ -333,6 +355,7 @@
       document.getElementById("wallet-btn").textContent = shortAddr(userAddress);
       document.getElementById("wallet-btn").classList.add("is-connected");
       await refresh();
+      suggestOinkInWallet(eth);
     } catch (err) {
       const msg = err?.message || String(err);
       setStatus(/user rejected|denied/i.test(msg) ? "cancelled in wallet" : msg, "warn");
