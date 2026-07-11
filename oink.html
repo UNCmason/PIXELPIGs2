@@ -55,7 +55,23 @@
       max-height:160px; overflow-y:auto; font-size:6px; color:var(--muted);
       border:1px solid var(--border); padding:8px; margin:10px 0; line-height:1.9;
     }
+    .pig-list.is-scanning {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      min-height:72px; text-align:center; color:var(--oink); font-size:7px;
+    }
     .pig-list .leg { color:var(--oink); }
+    .scan-msg { color:var(--oink); letter-spacing:1px; }
+    .scan-dots span {
+      display:inline-block; animation:scan-dot 1.1s ease-in-out infinite;
+      color:var(--rh-green);
+    }
+    .scan-dots span:nth-child(2) { animation-delay:0.15s; }
+    .scan-dots span:nth-child(3) { animation-delay:0.3s; }
+    @keyframes scan-dot {
+      0%, 70%, 100% { opacity:0.15; transform:translateY(0); }
+      35% { opacity:1; transform:translateY(-2px); }
+    }
+    .val.is-loading { color:var(--oink); letter-spacing:2px; }
 
     .btn {
       background:var(--rh-green); color:#000; border:none; padding:12px 16px;
@@ -233,6 +249,8 @@
   let provider, signer, userAddress;
   let claimableIds = [];
   let claimableTotal = 0n;
+  let scanTimer = null;
+  const SCAN_FRAMES = ["oink", "oink oink", "oink oink oink"];
 
   const eip6963Providers = [];
   window.addEventListener("eip6963:announceProvider", (event) => {
@@ -363,7 +381,43 @@
     document.getElementById("wallet-modal").classList.add("open");
   }
 
+  function stopScanLoading() {
+    if (scanTimer) {
+      clearInterval(scanTimer);
+      scanTimer = null;
+    }
+    document.getElementById("pig-list").classList.remove("is-scanning");
+    ["pig-count", "claimable", "oink-bal"].forEach((id) => {
+      document.getElementById(id).classList.remove("is-loading");
+    });
+  }
+
+  function startScanLoading() {
+    stopScanLoading();
+    document.getElementById("claim-btn").disabled = true;
+    ["pig-count", "claimable", "oink-bal"].forEach((id) => {
+      const el = document.getElementById(id);
+      el.textContent = "···";
+      el.classList.add("is-loading");
+    });
+    const pigList = document.getElementById("pig-list");
+    pigList.classList.add("is-scanning");
+    let frame = 0;
+    const tick = () => {
+      const msg = SCAN_FRAMES[frame % SCAN_FRAMES.length];
+      pigList.innerHTML =
+        `<span class="scan-msg">${msg}</span><br>` +
+        `<span class="scan-dots"><span>.</span><span>.</span><span>.</span></span><br>` +
+        `<span style="font-size:6px;color:var(--muted);margin-top:6px;display:inline-block">checking your pigs on chain</span>`;
+      setStatus(`${msg} — sniffing holdings`, "muted");
+      frame++;
+    };
+    tick();
+    scanTimer = setInterval(tick, 500);
+  }
+
   function disconnect() {
+    stopScanLoading();
     walletProvider = null;
     signer = null;
     userAddress = null;
@@ -427,10 +481,14 @@
   async function scanClaimable() {
     if (!userAddress || !CONTRACTS_LIVE) return;
 
+    startScanLoading();
+
     const pigs = new ethers.Contract(PIGS_ADDRESS, PIGS_ABI, provider);
     const claim = new ethers.Contract(CLAIM_ADDRESS, CLAIM_ABI, provider);
 
+    try {
     if (await claim.paused()) {
+      stopScanLoading();
       setStatus("claims paused by admin", "warn");
       document.getElementById("claim-btn").disabled = true;
       return;
@@ -454,13 +512,22 @@
       } catch { /* not minted */ }
     }
 
+    stopScanLoading();
     document.getElementById("pig-count").textContent = String(claimableIds.length);
+    document.getElementById("pig-count").classList.remove("is-loading");
     document.getElementById("claimable").textContent = claimableIds.length ? fmtOink(claimableTotal) : "0 OINK";
+    document.getElementById("claimable").classList.remove("is-loading");
     document.getElementById("pig-list").innerHTML = lines.length
       ? lines.join("<br>")
       : (supply === 0 ? "no pigs minted yet" : "no unclaimed pigs in your wallet");
 
     document.getElementById("claim-btn").disabled = claimableIds.length === 0;
+    } catch (err) {
+      stopScanLoading();
+      console.error(err);
+      setStatus("scan failed — try refresh", "warn");
+      document.getElementById("pig-list").textContent = "could not read pigs — try again";
+    }
   }
 
   async function refresh() {
@@ -485,14 +552,16 @@
 
     if (!userAddress) return;
 
+    await scanClaimable();
+
     try {
       const bal = await oink.balanceOf(userAddress);
       document.getElementById("oink-bal").textContent = fmtOink(bal);
+      document.getElementById("oink-bal").classList.remove("is-loading");
     } catch {
       document.getElementById("oink-bal").textContent = "—";
+      document.getElementById("oink-bal").classList.remove("is-loading");
     }
-
-    await scanClaimable();
     setStatus("ready — claim sends OINK to your wallet", "accent");
   }
 
