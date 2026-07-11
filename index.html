@@ -11,8 +11,10 @@
     :root {
       --bg:#000000;
       --card:#121212;
-      --rh-green:#00C805;
-      --rh-green-dim:#00a004;
+      --pig:#FFBC94;
+      --pig-dim:#E8A070;
+      --rh-green:#CCFF00;
+      --rh-green-dim:#A3CC00;
       --muted:#6b6b6b;
       --border:#1e1e1e;
       --text:#ffffff;
@@ -60,6 +62,8 @@
     .explore-links { font-size:7px; margin:10px 0 0; }
     .explore-links a { color:var(--muted); text-decoration:none; }
     .explore-links a:hover { color:var(--rh-green); }
+    .explore-links a[href="oink.html"] { color:var(--pig); }
+    .explore-links a[href="oink.html"]:hover { color:var(--pig-dim); }
 
     .mint-section {
       background:var(--card); border:2px solid var(--rh-green); padding:clamp(14px,2.5vw,22px);
@@ -655,7 +659,7 @@
       return;
     }
     el.innerHTML =
-      `Contract: <a href="${EXPLORER_URL}/address/${CONTRACT_ADDRESS}" target="_blank" rel="noopener" style="color:#00C805">${shortAddress(CONTRACT_ADDRESS)}</a>`;
+      `Contract: <a href="${EXPLORER_URL}/address/${CONTRACT_ADDRESS}" target="_blank" rel="noopener" style="color:#CCFF00">${shortAddress(CONTRACT_ADDRESS)}</a>`;
     if (extraHtml) el.innerHTML += `<br>${extraHtml}`;
   }
 

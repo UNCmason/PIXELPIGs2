@@ -9,7 +9,9 @@
   <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
   <style>
     :root {
-      --bg:#000000; --card:#121212; --rh-green:#00C805; --rh-green-dim:#00a004;
+      --bg:#000000; --card:#121212;
+      --pig:#FFBC94; --pig-dim:#E8A070;
+      --rh-green:#CCFF00; --rh-green-dim:#A3CC00;
       --muted:#6b6b6b; --border:#1e1e1e; --text:#ffffff; --gold:#ffd700;
     }
     * { box-sizing:border-box; }
@@ -27,6 +29,7 @@
     .nav-links { display:flex; gap:14px; font-size:7px; }
     .nav-links a { color:var(--muted); text-decoration:none; }
     .nav-links a:hover, .nav-links a.active { color:var(--rh-green); }
+    .nav-links a[href="oink.html"]:hover { color:var(--pig); }
 
     .hero { text-align:center; padding:28px 0 20px; }
     .hero h1 { font-size:clamp(14px,3vw,22px); margin:0 0 10px; letter-spacing:2px; color:var(--gold); text-shadow:2px 2px 0 var(--rh-green-dim); }
@@ -97,7 +100,7 @@
       <a href="index.html">mint</a>
       <a href="legendary.html" class="active">legendary</a>
       <a href="stats.html">stats</a>
-      <a href="oink.html">$oink</a>
+      <a href="oink.html" style="color:var(--pig)">$oink</a>
     </div>
   </div>
 </nav>
