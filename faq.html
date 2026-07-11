@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PIXELPIGS • FAQ</title>
+  <meta name="description" content="PixelPigs FAQ — Robinhood Chain, minting, $OINK claims, and anti-gaming rules.">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap">
+  <style>
+    :root {
+      --bg:#000000; --card:#121212;
+      --pig:#FFBC94; --pig-dim:#E8A070;
+      --rh-green:#CCFF00; --rh-green-dim:#A3CC00;
+      --muted:#6b6b6b; --border:#1e1e1e; --text:#ffffff;
+    }
+    html, body { margin:0; min-height:100%; }
+    body {
+      background:var(--bg); color:var(--text);
+      font-family:"Press Start 2P", system-ui, sans-serif; font-size:10px;
+      line-height:1.7;
+    }
+    .container { max-width:640px; margin:0 auto; padding:0 20px 40px; }
+    nav { border-bottom:2px solid var(--rh-green); padding:12px 0; }
+    .nav { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    .logo { font-size:11px; text-decoration:none; color:var(--text); }
+    .logo:hover { color:var(--rh-green); }
+    .nav-links { display:flex; gap:12px; font-size:7px; flex-wrap:wrap; }
+    .nav-links a { color:var(--muted); text-decoration:none; }
+    .nav-links a:hover, .nav-links a.active { color:var(--rh-green); }
+    .nav-links a[href="oink.html"] { color:var(--pig); }
+
+    .hero { padding:24px 0 16px; }
+    .hero h1 { font-size:clamp(12px,3vw,18px); margin:0 0 8px; letter-spacing:1px; }
+    .hero p { font-size:7px; color:var(--muted); margin:0; }
+
+    .faq-panel {
+      background:var(--card); border:2px solid var(--rh-green); padding:16px;
+    }
+    .faq-item { border-bottom:1px solid var(--border); padding:14px 0; }
+    .faq-item:last-child { border-bottom:none; padding-bottom:0; }
+    .faq-item h2 { font-size:8px; color:var(--rh-green); margin:0 0 8px; line-height:1.6; }
+    .faq-item p, .faq-item ul { font-size:7px; color:var(--muted); margin:0 0 8px; line-height:1.8; }
+    .faq-item p:last-child, .faq-item ul:last-child { margin-bottom:0; }
+    .faq-item ul { padding-left:16px; }
+    .faq-item li { margin:4px 0; }
+    .faq-item a { color:var(--rh-green); text-decoration:none; }
+    .faq-item a:hover { text-decoration:underline; }
+    .faq-item .pig { color:var(--pig); }
+
+    .formula {
+      background:var(--bg); border:1px solid var(--border); padding:10px;
+      font-size:7px; color:var(--text); margin:8px 0; line-height:1.9;
+    }
+    .formula strong { color:var(--pig); }
+
+    .footer { text-align:center; padding:20px 0 0; font-size:7px; }
+    .footer a { color:var(--muted); text-decoration:none; margin:0 6px; }
+    .footer a:hover { color:var(--rh-green); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav">
+    <a class="logo" href="index.html">PIXELPIGS</a>
+    <div class="nav-links">
+      <a href="index.html">mint</a>
+      <a href="legendary.html">legendary</a>
+      <a href="stats.html">stats</a>
+      <a href="oink.html">$oink</a>
+      <a href="faq.html" class="active">faq</a>
+    </div>
+  </div>
+</nav>
+
+<header class="container hero">
+  <h1>FAQ</h1>
+  <p>Robinhood Chain · pigs · $OINK · claims</p>
+</header>
+
+<main class="container faq-panel">
+
+  <section class="faq-item">
+    <h2>What are PixelPigs?</h2>
+    <p>3,333 pixel-art pigs on <strong>Robinhood Chain</strong>. Pure code — no AI. Each pig is an ERC-721 NFT you can hold, trade on <a href="https://opensea.io/collection/pixelpigs-810496750" target="_blank" rel="noopener">OpenSea</a>, and use to claim <span class="pig">$OINK</span>.</p>
+    <p>Mint at <a href="index.html">hoodpixelpigs.xyz</a> · max <strong>11 pigs per wallet</strong> · price targets <strong>~$1 USD</strong> in ETH (set on-chain).</p>
+  </section>
+
+  <section class="faq-item">
+    <h2>How do I add Robinhood Chain to MetaMask?</h2>
+    <ul>
+      <li>Open MetaMask → network dropdown → <strong>Add network</strong></li>
+      <li>Or tap <strong>ADD ROBINHOOD CHAIN</strong> on the <a href="index.html">mint page</a></li>
+    </ul>
+    <p>Use these settings:</p>
+    <ul>
+      <li><strong>Network name:</strong> Robinhood Chain</li>
+      <li><strong>RPC URL:</strong> https://rpc.mainnet.chain.robinhood.com</li>
+      <li><strong>Chain ID:</strong> 4663</li>
+      <li><strong>Currency:</strong> ETH</li>
+      <li><strong>Explorer:</strong> https://robinhoodchain.blockscout.com</li>
+    </ul>
+    <p>You need a small amount of <strong>ETH on Robinhood Chain</strong> for mint gas + mint price. Bridge ETH to chain 4663 before minting.</p>
+  </section>
+
+  <section class="faq-item">
+    <h2>Which wallet can I use?</h2>
+    <p>Any EVM wallet on chain 4663: MetaMask, OKX, Rabby, Robinhood Wallet, etc. On mint and <a href="oink.html">claim</a> pages, tap <strong>CONNECT</strong> and pick your wallet from the list.</p>
+  </section>
+
+  <section class="faq-item">
+    <h2>What is $OINK?</h2>
+    <p><span class="pig">$OINK</span> is the PixelPigs community token on Robinhood Chain. Holders claim it once per pig they own. Fixed supply: <strong>335,700,000 OINK</strong>.</p>
+    <p>Token: <a href="https://robinhoodchain.blockscout.com/address/0xF2c5F81F291E80BFC59e66E6D027C23471ED745b" target="_blank" rel="noopener">0xF2c5…745b</a> · Claim: <a href="oink.html">oink.html</a></p>
+  </section>
+
+  <section class="faq-item">
+    <h2>How much OINK do I get per pig?</h2>
+    <div class="formula">
+      <strong>Normal pig</strong> → 100,000 OINK<br>
+      <strong>Legendary pig</strong> → 300,000 OINK (3×)<br>
+      <span style="color:var(--muted)">12 legendaries in the collection — see <a href="legendary.html">legendary board</a></span>
+    </div>
+    <p>Max if all 3,333 mint + claim: 3,321 × 100k + 12 × 300k = <strong>335,700,000 OINK</strong> (entire supply).</p>
+  </section>
+
+  <section class="faq-item">
+    <h2>Can someone game the claim with multiple wallets?</h2>
+    <p><strong>Not on the same pig.</strong> Claims are tied to <strong>token ID</strong>, not “forever owner.”</p>
+    <ul>
+      <li>Each pig ID can be claimed <strong>only once — ever</strong></li>
+      <li>Mint → claim → sell pig → <strong>buyer cannot claim again</strong> for that ID</li>
+      <li>Sending one pig through many wallets does <strong>not</strong> mint extra OINK</li>
+    </ul>
+    <p>Using many wallets to <strong>mint</strong> more pigs (11 each) is separate — each pig still gets only one claim. That is a mint-cap question, not a claim exploit.</p>
+  </section>
+
+  <section class="faq-item">
+    <h2>I bought a pig on OpenSea. Can I claim OINK?</h2>
+    <p>Only if that <strong>token ID was never claimed</strong> before. Check <a href="oink.html">claim page</a> after connect — if it shows 0 claimable, the previous owner already claimed. You own the art; the one-time OINK for that ID is gone.</p>
+  </section>
+
+  <section class="faq-item">
+    <h2>Are pigs transferable?</h2>
+    <p><strong>Yes.</strong> PixelPigs are full ERC-721 NFTs — trade, send, list on OpenSea anytime. Transfers do not reset or duplicate OINK claims.</p>
+  </section>
+
+  <section class="faq-item">
+    <h2>Why does mint price show more or less than $1?</h2>
+    <p>Mint price is set in <strong>ETH on-chain</strong>. The site converts live ETH/USD so it targets ~$1. When ETH moves, the ETH amount stays until the team updates <code>setMintPrice</code> — refresh the mint page to see current USD.</p>
+  </section>
+
+  <section class="faq-item">
+    <h2>Contract addresses</h2>
+    <ul>
+      <li><strong>PixelPigs NFT:</strong> <a href="https://robinhoodchain.blockscout.com/address/0xc51e0a920133D1491Db4ee4BA461e0BE77B4b3b8" target="_blank" rel="noopener">0xc51e…b3b8</a></li>
+      <li><strong>$OINK token:</strong> <a href="https://robinhoodchain.blockscout.com/address/0xF2c5F81F291E80BFC59e66E6D027C23471ED745b" target="_blank" rel="noopener">0xF2c5…745b</a></li>
+      <li><strong>OINK claim:</strong> <a href="https://robinhoodchain.blockscout.com/address/0x51fA1E5fD4B0B2F0318B0cE712d1958010A4265f" target="_blank" rel="noopener">0x51fA…265f</a></li>
+    </ul>
+  </section>
+
+  <section class="faq-item">
+    <h2>Quick links</h2>
+    <p>
+      <a href="index.html">Mint</a> ·
+      <a href="oink.html">Claim $OINK</a> ·
+      <a href="legendary.html">Legendary board</a> ·
+      <a href="stats.html">Live stats</a> ·
+      <a href="https://x.com/HoodPixelPigs" target="_blank" rel="noopener">@HoodPixelPigs</a>
+    </p>
+  </section>
+
+</main>
+
+<div class="container footer">
+  <a href="index.html">← mint</a>
+</div>
+
+</body>
+</html>
