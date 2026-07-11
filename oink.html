@@ -79,6 +79,11 @@
     }
     .btn:hover { background:var(--rh-green-dim); }
     .btn:disabled { opacity:0.45; cursor:not-allowed; }
+    .btn.is-claiming { background:var(--oink); color:#000; animation:claim-pulse 1.2s ease-in-out infinite; }
+    @keyframes claim-pulse {
+      0%, 100% { box-shadow:0 0 0 0 rgba(255,179,71,0.4); }
+      50% { box-shadow:0 0 12px 2px rgba(255,179,71,0.35); }
+    }
     .btn-wallet {
       width:auto; font-size:7px; padding:8px 12px;
       border:2px solid var(--rh-green); background:transparent; color:var(--rh-green);
@@ -250,7 +255,9 @@
   let claimableIds = [];
   let claimableTotal = 0n;
   let scanTimer = null;
+  let claimTimer = null;
   const SCAN_FRAMES = ["oink", "oink oink", "oink oink oink"];
+  const CLAIM_FRAMES = ["claiming oink", "oink incoming", "landing oink"];
 
   const eip6963Providers = [];
   window.addEventListener("eip6963:announceProvider", (event) => {
@@ -381,15 +388,68 @@
     document.getElementById("wallet-modal").classList.add("open");
   }
 
+  function renderLoadingBox(msg, subtitle) {
+    return (
+      `<span class="scan-msg">${msg}</span><br>` +
+      `<span class="scan-dots"><span>.</span><span>.</span><span>.</span></span><br>` +
+      `<span style="font-size:6px;color:var(--muted);margin-top:6px;display:inline-block">${subtitle}</span>`
+    );
+  }
+
   function stopScanLoading() {
     if (scanTimer) {
       clearInterval(scanTimer);
       scanTimer = null;
     }
-    document.getElementById("pig-list").classList.remove("is-scanning");
+    if (!claimTimer) {
+      document.getElementById("pig-list").classList.remove("is-scanning");
+    }
     ["pig-count", "claimable", "oink-bal"].forEach((id) => {
       document.getElementById(id).classList.remove("is-loading");
     });
+  }
+
+  function stopClaimLoading() {
+    if (claimTimer) {
+      clearInterval(claimTimer);
+      claimTimer = null;
+    }
+    document.getElementById("pig-list").classList.remove("is-scanning");
+    const btn = document.getElementById("claim-btn");
+    btn.textContent = "CLAIM OINK";
+    btn.classList.remove("is-claiming");
+  }
+
+  function startClaimLoading(phase, txHash) {
+    stopClaimLoading();
+    const btn = document.getElementById("claim-btn");
+    btn.disabled = true;
+    btn.textContent = phase === "wallet" ? "CONFIRM IN WALLET" : "OINKING…";
+    btn.classList.add("is-claiming");
+
+    const pigList = document.getElementById("pig-list");
+    pigList.classList.add("is-scanning");
+    let frame = 0;
+
+    const subtitles = {
+      wallet: "approve the claim in your wallet",
+      chain: txHash
+        ? `tx ${shortAddr(txHash)} — waiting for block`
+        : "transaction submitted — waiting for chain",
+    };
+
+    const tick = () => {
+      const msg = CLAIM_FRAMES[frame % CLAIM_FRAMES.length];
+      pigList.innerHTML = renderLoadingBox(msg, subtitles[phase] || "processing claim");
+      setStatus(
+        phase === "wallet" ? `${msg} — confirm in wallet` : `${msg} — on chain`,
+        "muted"
+      );
+      frame++;
+    };
+
+    tick();
+    claimTimer = setInterval(tick, 500);
   }
 
   function startScanLoading() {
@@ -405,10 +465,7 @@
     let frame = 0;
     const tick = () => {
       const msg = SCAN_FRAMES[frame % SCAN_FRAMES.length];
-      pigList.innerHTML =
-        `<span class="scan-msg">${msg}</span><br>` +
-        `<span class="scan-dots"><span>.</span><span>.</span><span>.</span></span><br>` +
-        `<span style="font-size:6px;color:var(--muted);margin-top:6px;display:inline-block">checking your pigs on chain</span>`;
+      pigList.innerHTML = renderLoadingBox(msg, "checking your pigs on chain");
       setStatus(`${msg} — sniffing holdings`, "muted");
       frame++;
     };
@@ -570,19 +627,20 @@
     const btn = document.getElementById("claim-btn");
     const claimedAmount = claimableTotal;
     const claimedCount = claimableIds.length;
-    btn.disabled = true;
     hideSuccess();
-    setStatus("confirm claim in wallet…", "muted");
+    startClaimLoading("wallet");
 
     try {
       const claim = new ethers.Contract(CLAIM_ADDRESS, CLAIM_ABI, signer);
       const tx = await claim.claim(claimableIds);
-      setStatus(`submitted — waiting for chain…`, "muted");
+      startClaimLoading("chain", tx.hash);
       const receipt = await tx.wait();
       const hash = receipt?.hash || tx.hash;
+      stopClaimLoading();
       showSuccess(claimedAmount, claimedCount, hash);
       await refresh();
     } catch (err) {
+      stopClaimLoading();
       const msg = err?.reason || err?.shortMessage || err?.message || "claim failed";
       if (/user rejected|denied/i.test(msg)) {
         setStatus("cancelled in wallet", "warn");
@@ -590,6 +648,7 @@
         setStatus(msg, "warn");
       }
       btn.disabled = claimableIds.length === 0;
+      await refresh();
     }
   }
 
