@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PIXELPIGS • Legendary Board</title>
+  <meta name="description" content="12 Twitter OG legendary PixelPigs — grail hunt on Robinhood Chain.">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap">
+  <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:#000000; --card:#121212; --rh-green:#00C805; --rh-green-dim:#00a004;
+      --muted:#6b6b6b; --border:#1e1e1e; --text:#ffffff; --gold:#ffd700;
+    }
+    * { box-sizing:border-box; }
+    html, body { margin:0; min-height:100%; }
+    body {
+      background:var(--bg); color:var(--text);
+      font-family:"Press Start 2P", system-ui, sans-serif; font-size:10px;
+      line-height:1.6;
+    }
+    .container { max-width:1100px; margin:0 auto; padding:0 20px; }
+    nav { border-bottom:2px solid var(--rh-green); padding:12px 0; }
+    .nav { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .logo { font-size:11px; letter-spacing:1px; text-decoration:none; color:var(--text); }
+    .logo:hover { color:var(--rh-green); }
+    .nav-links { display:flex; gap:14px; font-size:7px; }
+    .nav-links a { color:var(--muted); text-decoration:none; }
+    .nav-links a:hover, .nav-links a.active { color:var(--rh-green); }
+
+    .hero { text-align:center; padding:28px 0 20px; }
+    .hero h1 { font-size:clamp(14px,3vw,22px); margin:0 0 10px; letter-spacing:2px; color:var(--gold); text-shadow:2px 2px 0 var(--rh-green-dim); }
+    .hero p { font-size:7px; color:var(--muted); margin:0; max-width:520px; margin-inline:auto; }
+    .legendary-count { display:inline-block; border:2px solid var(--gold); color:var(--gold); padding:4px 10px; font-size:7px; margin-bottom:12px; }
+
+    .board-summary {
+      display:flex; justify-content:center; gap:20px; flex-wrap:wrap;
+      font-size:7px; margin-bottom:24px; color:var(--muted);
+    }
+    .board-summary span strong { color:var(--rh-green); }
+
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+      gap:16px;
+      padding-bottom:40px;
+    }
+    .card {
+      background:var(--card); border:2px solid var(--border);
+      display:flex; flex-direction:column; transition:border-color .15s;
+    }
+    .card:hover { border-color:var(--rh-green); }
+    .card.is-minted { border-color:#2a4a2a; }
+    .card.is-available { border-color:var(--gold); }
+    .card-img-wrap {
+      aspect-ratio:1; background:#0a0a0a; display:flex; align-items:center; justify-content:center;
+      border-bottom:2px solid var(--border); position:relative;
+    }
+    .card-img {
+      width:100%; height:100%; object-fit:contain; image-rendering:pixelated; image-rendering:crisp-edges;
+    }
+    .status-pill {
+      position:absolute; top:8px; right:8px; font-size:6px; padding:4px 6px;
+      border:1px solid; background:rgba(0,0,0,.85);
+    }
+    .status-pill.minted { color:var(--muted); border-color:var(--muted); }
+    .status-pill.available { color:var(--gold); border-color:var(--gold); }
+
+    .card-body { padding:12px; flex:1; display:flex; flex-direction:column; gap:8px; }
+    .card-name { font-size:8px; line-height:1.5; margin:0; color:var(--text); }
+    .card-meta { font-size:6px; color:var(--muted); }
+    .legendary-tag { font-size:6px; color:var(--gold); border:1px solid var(--gold); display:inline-block; padding:3px 6px; }
+    .traits { display:flex; flex-wrap:wrap; gap:4px; }
+    .trait { font-size:5px; padding:3px 5px; background:var(--bg); border:1px solid var(--border); color:var(--muted); }
+    .trait span { color:var(--text); }
+    .card-desc { font-size:6px; color:var(--muted); margin:0; line-height:1.7; flex:1; }
+    .card-links { display:flex; gap:8px; flex-wrap:wrap; font-size:6px; margin-top:4px; }
+    .card-links a { color:var(--rh-green); text-decoration:none; }
+    .card-links a:hover { text-decoration:underline; }
+
+    .cta-bar {
+      text-align:center; padding:20px 0 36px; border-top:2px solid var(--border);
+      font-size:7px;
+    }
+    .cta-bar a { color:var(--rh-green); text-decoration:none; }
+    .cta-bar a:hover { text-decoration:underline; }
+
+    .loading { text-align:center; padding:40px; color:var(--muted); font-size:7px; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav">
+    <a class="logo" href="index.html">PIXELPIGS</a>
+    <div class="nav-links">
+      <a href="index.html">mint</a>
+      <a href="legendary.html" class="active">legendary</a>
+      <a href="stats.html">stats</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero container">
+  <div class="legendary-count">12 LEGENDARY</div>
+  <h1>LEGENDARY BOARD</h1>
+  <p>Twitter OG grails hidden in the 3,333 supply. Mint to chase them — each is a 1-of-1 legendary trait.</p>
+</header>
+
+<div class="container board-summary" id="board-summary">
+  <span>minted <strong id="minted-count">—</strong></span>
+  <span>still out there <strong id="available-count">—</strong></span>
+  <span>supply <strong id="supply-read">—</strong></span>
+</div>
+
+<div class="container">
+  <div class="grid" id="board">
+    <div class="loading">loading legendary pigs…</div>
+  </div>
+</div>
+
+<div class="container cta-bar">
+  <a href="index.html">← mint now</a>
+  &nbsp;·&nbsp;
+  <a href="stats.html">live stats →</a>
+</div>
+
+<script src="legendary-data.js"></script>
+<script>
+  const CONTRACT_ADDRESS = "0xc51e0a920133D1491Db4ee4BA461e0BE77B4b3b8";
+  const RPC_URL = "https://rpc.mainnet.chain.robinhood.com";
+  const EXPLORER_URL = "https://robinhoodchain.blockscout.com";
+  const IMAGES_BASE = "https://pixelpigs.s3.filebase.io/images/";
+  const OPENSEA_COLLECTION = "https://opensea.io/collection/pixelpigs-810496750";
+
+  const CONTRACT_ABI = [
+    "function totalSupply() view returns (uint256)",
+    "function ownerOf(uint256) view returns (address)"
+  ];
+
+  const KEY_TRAITS = ["Background", "Fur Color", "Headwear", "Accessory", "Mark"];
+
+  function shortAddr(a) {
+    return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "";
+  }
+
+  function openseaAssetUrl(tokenId) {
+    return `https://opensea.io/assets/robinhood/${CONTRACT_ADDRESS}/${tokenId}`;
+  }
+
+  function renderCard(pig, minted, owner) {
+    const img = `${IMAGES_BASE}${pig.imageIdx}.png`;
+    const traits = pig.attributes
+      .filter((t) => KEY_TRAITS.includes(t.trait_type))
+      .map((t) => `<span class="trait">${t.trait_type}: <span>${t.value}</span></span>`)
+      .join("");
+
+    const statusClass = minted ? "minted" : "available";
+    const statusLabel = minted ? "MINTED" : "OUT THERE";
+    const cardClass = minted ? "is-minted" : "is-available";
+
+    const ownerLine = minted && owner
+      ? `<div class="card-meta">holder ${shortAddr(owner)}</div>`
+      : "";
+
+    const links = minted
+      ? `<a href="${openseaAssetUrl(pig.tokenId)}" target="_blank" rel="noopener">opensea</a>
+         <a href="${EXPLORER_URL}/token/${CONTRACT_ADDRESS}/instance/${pig.tokenId}" target="_blank" rel="noopener">explorer</a>`
+      : `<a href="index.html">mint to hunt</a>`;
+
+    return `
+      <article class="card ${cardClass}">
+        <div class="card-img-wrap">
+          <img class="card-img" src="${img}" alt="${pig.name}" loading="lazy" width="240" height="240">
+          <span class="status-pill ${statusClass}">${statusLabel}</span>
+        </div>
+        <div class="card-body">
+          <h2 class="card-name">${pig.name}</h2>
+          <div class="card-meta">#${pig.tokenId}</div>
+          <span class="legendary-tag">${pig.legendary}</span>
+          <p class="card-desc">${pig.description}</p>
+          <div class="traits">${traits}</div>
+          ${ownerLine}
+          <div class="card-links">${links}</div>
+        </div>
+      </article>`;
+  }
+
+  async function loadBoard() {
+    const board = document.getElementById("board");
+    try {
+      const provider = new ethers.JsonRpcProvider(RPC_URL);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+      const totalSupply = Number(await contract.totalSupply());
+
+      document.getElementById("supply-read").textContent = `${totalSupply} / 3333`;
+
+      const cards = await Promise.all(LEGENDARY_PIGS.map(async (pig) => {
+        const minted = pig.tokenId <= totalSupply;
+        let owner = null;
+        if (minted) {
+          try { owner = await contract.ownerOf(pig.tokenId); } catch { /* skip */ }
+        }
+        return renderCard(pig, minted, owner);
+      }));
+
+      board.innerHTML = cards.join("");
+
+      const mintedLegendary = LEGENDARY_PIGS.filter((p) => p.tokenId <= totalSupply).length;
+      document.getElementById("minted-count").textContent = String(mintedLegendary);
+      document.getElementById("available-count").textContent = String(LEGENDARY_PIGS.length - mintedLegendary);
+    } catch (err) {
+      console.error(err);
+      board.innerHTML = LEGENDARY_PIGS.map((pig) => renderCard(pig, false, null)).join("");
+      document.getElementById("board-summary").innerHTML =
+        '<span class="muted" style="font-size:7px">on-chain status unavailable — showing all as hunt targets</span>';
+    }
+  }
+
+  loadBoard();
+</script>
+</body>
+</html>

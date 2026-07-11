@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PIXELPIGS • Live Stats</title>
+  <meta name="description" content="Live PixelPigs mint stats — supply, price, and progress on Robinhood Chain.">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap">
+  <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:#000000; --card:#121212; --rh-green:#00C805; --rh-green-dim:#00a004;
+      --muted:#6b6b6b; --border:#1e1e1e; --text:#ffffff;
+    }
+    * { box-sizing:border-box; }
+    html, body { margin:0; min-height:100%; }
+    body {
+      background:var(--bg); color:var(--text);
+      font-family:"Press Start 2P", system-ui, sans-serif; font-size:10px;
+      line-height:1.6;
+    }
+    .container { max-width:720px; margin:0 auto; padding:0 20px; }
+    nav { border-bottom:2px solid var(--rh-green); padding:12px 0; }
+    .nav { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .logo { font-size:11px; letter-spacing:1px; text-decoration:none; color:var(--text); }
+    .logo:hover { color:var(--rh-green); }
+    .nav-links { display:flex; gap:14px; font-size:7px; }
+    .nav-links a { color:var(--muted); text-decoration:none; }
+    .nav-links a:hover, .nav-links a.active { color:var(--rh-green); }
+
+    .hero { text-align:center; padding:28px 0 24px; }
+    .hero h1 { font-size:clamp(14px,3vw,20px); margin:0 0 8px; letter-spacing:2px; text-shadow:2px 2px 0 var(--rh-green-dim); }
+    .hero p { font-size:7px; color:var(--muted); margin:0; }
+    .live-dot { display:inline-block; width:6px; height:6px; background:var(--rh-green); margin-right:6px; animation:pulse 2s infinite; vertical-align:middle; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    .panel {
+      background:var(--card); border:2px solid var(--rh-green);
+      padding:20px; margin-bottom:20px;
+    }
+
+    .progress-wrap { margin:16px 0 8px; }
+    .progress-label { display:flex; justify-content:space-between; font-size:7px; margin-bottom:8px; }
+    .progress-label .pct { color:var(--rh-green); }
+    .progress-bar {
+      height:14px; background:var(--bg); border:2px solid var(--border); overflow:hidden;
+    }
+    .progress-fill {
+      height:100%; background:var(--rh-green); width:0%;
+      transition:width .6s ease; box-shadow:0 0 12px rgba(0,200,5,.4);
+    }
+
+    .stat-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;
+    }
+    .stat-box {
+      background:var(--bg); border:1px solid var(--border); padding:14px 12px;
+    }
+    .stat-box.wide { grid-column:1 / -1; }
+    .stat-label { font-size:6px; color:var(--muted); margin-bottom:6px; }
+    .stat-value { font-size:clamp(10px,2.5vw,16px); color:var(--rh-green); line-height:1.4; }
+    .stat-value small { display:block; font-size:6px; color:var(--muted); margin-top:4px; font-weight:normal; }
+
+    .links-panel {
+      display:flex; flex-wrap:wrap; gap:10px; justify-content:center;
+      padding:20px 0 36px; font-size:7px;
+    }
+    .links-panel a {
+      color:var(--text); text-decoration:none; border:2px solid var(--border);
+      padding:8px 12px;
+    }
+    .links-panel a:hover { border-color:var(--rh-green); color:var(--rh-green); }
+
+    .updated { text-align:center; font-size:6px; color:var(--muted); padding-bottom:8px; }
+    .err { color:#ffaa00; font-size:7px; text-align:center; margin-top:8px; display:none; }
+
+    @media (max-width:480px) {
+      .stat-grid { grid-template-columns:1fr; }
+      .stat-box.wide { grid-column:auto; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav">
+    <a class="logo" href="index.html">PIXELPIGS</a>
+    <div class="nav-links">
+      <a href="index.html">mint</a>
+      <a href="legendary.html">legendary</a>
+      <a href="stats.html" class="active">stats</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero container">
+  <h1>LIVE STATS</h1>
+  <p><span class="live-dot"></span>on-chain reads from Robinhood Chain</p>
+</header>
+
+<main class="container">
+  <section class="panel">
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>mint progress</span>
+        <span class="pct" id="pct-display">0%</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-label">minted</div>
+        <div class="stat-value" id="minted">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">remaining</div>
+        <div class="stat-value" id="remaining">—</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">max supply</div>
+        <div class="stat-value" id="max-supply">3,333</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">max per wallet</div>
+        <div class="stat-value" id="max-wallet">11</div>
+      </div>
+      <div class="stat-box wide">
+        <div class="stat-label">mint price</div>
+        <div class="stat-value" id="mint-price">—<small id="mint-price-usd">fetching…</small></div>
+      </div>
+      <div class="stat-box wide">
+        <div class="stat-label">contract</div>
+        <div class="stat-value" id="contract-addr" style="font-size:7px;word-break:break-all;">—</div>
+      </div>
+    </div>
+    <div class="err" id="err-msg"></div>
+  </section>
+
+  <p class="updated" id="updated-at">updating…</p>
+</main>
+
+<div class="container links-panel">
+  <a href="index.html">mint now</a>
+  <a href="legendary.html">legendary board</a>
+  <a href="https://opensea.io/collection/pixelpigs-810496750" target="_blank" rel="noopener">opensea</a>
+  <a href="https://robinhoodchain.blockscout.com/address/0xc51e0a920133D1491Db4ee4BA461e0BE77B4b3b8" target="_blank" rel="noopener">blockscout</a>
+  <a href="https://x.com/HoodPixelPigs" target="_blank" rel="noopener">@HoodPixelPigs</a>
+</div>
+
+<script>
+  const CONTRACT_ADDRESS = "0xc51e0a920133D1491Db4ee4BA461e0BE77B4b3b8";
+  const RPC_URL = "https://rpc.mainnet.chain.robinhood.com";
+  const EXPLORER_URL = "https://robinhoodchain.blockscout.com";
+  const POLL_MS = 30000;
+
+  const CONTRACT_ABI = [
+    "function MINT_PRICE() view returns (uint256)",
+    "function MAX_SUPPLY() view returns (uint256)",
+    "function MAX_PER_WALLET() view returns (uint256)",
+    "function totalSupply() view returns (uint256)",
+    "function remainingSupply() view returns (uint256)"
+  ];
+
+  const provider = new ethers.JsonRpcProvider(RPC_URL);
+  const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, provider);
+
+  function fmt(n) { return Number(n).toLocaleString("en-US"); }
+
+  function shortAddr(a) {
+    return `${a.slice(0, 6)}…${a.slice(-4)}`;
+  }
+
+  async function fetchEthUsd() {
+    const sources = [
+      async () => {
+        const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
+        const j = await r.json();
+        return j?.ethereum?.usd;
+      },
+      async () => {
+        const r = await fetch("https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT");
+        const j = await r.json();
+        return Number(j?.price);
+      }
+    ];
+    for (const fn of sources) {
+      try {
+        const p = await fn();
+        if (p) return Number(p);
+      } catch { /* next */ }
+    }
+    return 0;
+  }
+
+  async function refreshStats() {
+    const errEl = document.getElementById("err-msg");
+    errEl.style.display = "none";
+
+    try {
+      const [minted, remaining, maxSupply, maxWallet, mintPriceWei, ethUsd] = await Promise.all([
+        contract.totalSupply(),
+        contract.remainingSupply(),
+        contract.MAX_SUPPLY(),
+        contract.MAX_PER_WALLET(),
+        contract.MINT_PRICE(),
+        fetchEthUsd()
+      ]);
+
+      const mintedN = Number(minted);
+      const maxN = Number(maxSupply);
+      const pct = maxN > 0 ? (mintedN / maxN) * 100 : 0;
+      const priceEth = Number(ethers.formatEther(mintPriceWei));
+
+      document.getElementById("minted").textContent = fmt(mintedN);
+      document.getElementById("remaining").textContent = fmt(Number(remaining));
+      document.getElementById("max-supply").textContent = fmt(maxN);
+      document.getElementById("max-wallet").textContent = fmt(Number(maxWallet));
+      document.getElementById("pct-display").textContent = `${pct.toFixed(2)}%`;
+      document.getElementById("progress-fill").style.width = `${Math.min(pct, 100)}%`;
+
+      const usd = ethUsd > 0 ? priceEth * ethUsd : 0;
+      document.getElementById("mint-price").innerHTML =
+        `${priceEth.toFixed(6)} ETH` +
+        `<small>${usd > 0 ? `≈ $${usd.toFixed(2)} USD` : "USD price unavailable"}</small>`;
+
+      document.getElementById("contract-addr").innerHTML =
+        `<a href="${EXPLORER_URL}/address/${CONTRACT_ADDRESS}" target="_blank" rel="noopener" style="color:#00C805;text-decoration:none">${CONTRACT_ADDRESS}</a>`;
+
+      const now = new Date();
+      document.getElementById("updated-at").textContent =
+        `last updated ${now.toLocaleTimeString()} · refreshes every ${POLL_MS / 1000}s`;
+    } catch (err) {
+      console.error(err);
+      errEl.textContent = "could not read contract — RPC may be down";
+      errEl.style.display = "block";
+    }
+  }
+
+  document.getElementById("contract-addr").textContent = shortAddr(CONTRACT_ADDRESS);
+  refreshStats();
+  setInterval(refreshStats, POLL_MS);
+</script>
+</body>
+</html>
