@@ -10,115 +10,65 @@
   <style>
     :root {
       --bg:#000000; --card:#121212; --rh-green:#00C805; --rh-green-dim:#00a004;
-      --muted:#6b6b6b; --border:#1e1e1e; --text:#ffffff; --oink:#ffb347;
+      --muted:#6b6b6b; --border:#1e1e1e; --text:#ffffff;
     }
-    * { box-sizing:border-box; }
-    html, body { margin:0; min-height:100%; }
+    html, body { height:100%; margin:0; }
     body {
       background:var(--bg); color:var(--text);
-      font-family:"Press Start 2P", system-ui, sans-serif; font-size:10px;
-      line-height:1.6;
+      font-family:"Press Start 2P", system-ui, sans-serif; font-size:11px;
+      display:flex; flex-direction:column; overflow:hidden;
     }
-    .container { max-width:640px; margin:0 auto; padding:0 20px; }
-    nav { border-bottom:2px solid var(--rh-green); padding:12px 0; }
+    .container { max-width:520px; margin:0 auto; padding:0 20px; width:100%; box-sizing:border-box; }
+
+    nav { flex-shrink:0; border-bottom:2px solid var(--rh-green); padding:10px 0; }
     .nav { display:flex; justify-content:space-between; align-items:center; gap:12px; }
-    .logo { font-size:11px; letter-spacing:1px; text-decoration:none; color:var(--text); }
+    .logo { font-size:12px; letter-spacing:1px; text-decoration:none; color:var(--text); }
     .logo:hover { color:var(--rh-green); }
-    .nav-links { display:flex; gap:14px; font-size:7px; flex-wrap:wrap; justify-content:flex-end; }
-    .nav-links a { color:var(--muted); text-decoration:none; }
-    .nav-links a:hover, .nav-links a.active { color:var(--rh-green); }
-
-    .hero { text-align:center; padding:28px 0 20px; }
-    .hero h1 { font-size:clamp(16px,4vw,26px); margin:0 0 8px; color:var(--oink); text-shadow:2px 2px 0 var(--rh-green-dim); }
-    .hero p { font-size:7px; color:var(--muted); margin:0; max-width:480px; margin-inline:auto; }
-
-    .panel {
-      background:var(--card); border:2px solid var(--oink);
-      padding:18px; margin-bottom:16px;
+    .btn-wallet {
+      padding:7px 12px; width:auto; font-size:8px; border:2px solid var(--rh-green);
+      background:var(--rh-green); color:#000; font-family:inherit; cursor:pointer;
     }
-    .panel h2 { font-size:9px; margin:0 0 12px; color:var(--oink); }
-    .rates { font-size:6px; color:var(--muted); line-height:1.8; margin-bottom:14px; }
-    .rates strong { color:var(--text); }
+    .btn-wallet.is-connected { background:transparent; color:var(--rh-green); }
 
-    .stat-row { display:flex; justify-content:space-between; font-size:7px; margin:8px 0; gap:12px; }
+    .page { flex:1; min-height:0; display:flex; align-items:center; justify-content:center; padding:16px 0; }
+
+    .claim-section {
+      background:var(--card); border:2px solid var(--rh-green);
+      padding:clamp(14px,2.5vw,22px); width:100%;
+    }
+    .claim-head { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; margin-bottom:10px; }
+    .claim-head h1 { margin:0; font-size:11px; letter-spacing:1px; }
+    .claim-meta { font-size:7px; color:var(--muted); line-height:1.6; text-align:right; }
+
+    .stat-row { display:flex; justify-content:space-between; font-size:8px; margin:6px 0; gap:8px; }
     .stat-row .val { color:var(--rh-green); text-align:right; }
-    .stat-row .val a { color:var(--oink); text-decoration:none; word-break:break-all; }
-    .stat-row .val a:hover { color:var(--rh-green); text-decoration:underline; }
-    .ca-block {
-      font-size:6px; color:var(--muted); border-top:1px solid var(--border);
-      margin-top:12px; padding-top:10px; line-height:1.9;
-    }
-    .ca-block a { color:var(--oink); text-decoration:none; }
-    .ca-block a:hover { color:var(--rh-green); }
 
     .pig-list {
-      max-height:160px; overflow-y:auto; font-size:6px; color:var(--muted);
-      border:1px solid var(--border); padding:8px; margin:10px 0; line-height:1.9;
+      max-height:100px; overflow-y:auto; font-size:7px; color:var(--muted);
+      border:1px solid var(--border); padding:8px; margin:10px 0; line-height:1.7;
     }
-    .pig-list.is-scanning {
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      min-height:72px; text-align:center; color:var(--oink); font-size:7px;
-    }
-    .pig-list .leg { color:var(--oink); }
-    .scan-msg { color:var(--oink); letter-spacing:1px; }
-    .scan-dots span {
-      display:inline-block; animation:scan-dot 1.1s ease-in-out infinite;
-      color:var(--rh-green);
-    }
-    .scan-dots span:nth-child(2) { animation-delay:0.15s; }
-    .scan-dots span:nth-child(3) { animation-delay:0.3s; }
-    @keyframes scan-dot {
-      0%, 70%, 100% { opacity:0.15; transform:translateY(0); }
-      35% { opacity:1; transform:translateY(-2px); }
-    }
-    .val.is-loading { color:var(--oink); letter-spacing:2px; }
+    .pig-list .leg { color:var(--rh-green); }
+
+    .ca-line { font-size:6px; color:var(--muted); margin:8px 0; line-height:1.6; word-break:break-all; }
+    .ca-line a { color:var(--rh-green); text-decoration:none; }
+    .ca-line a:hover { text-decoration:underline; }
 
     .btn {
       background:var(--rh-green); color:#000; border:none; padding:12px 16px;
-      font-family:inherit; font-size:9px; font-weight:bold; cursor:pointer; width:100%;
+      font-family:inherit; font-size:10px; font-weight:bold; cursor:pointer; width:100%;
     }
     .btn:hover { background:var(--rh-green-dim); }
-    .btn:disabled { opacity:0.45; cursor:not-allowed; }
-    .btn.is-claiming { background:var(--oink); color:#000; animation:claim-pulse 1.2s ease-in-out infinite; }
-    @keyframes claim-pulse {
-      0%, 100% { box-shadow:0 0 0 0 rgba(255,179,71,0.4); }
-      50% { box-shadow:0 0 12px 2px rgba(255,179,71,0.35); }
-    }
-    .btn-wallet {
-      width:auto; font-size:7px; padding:8px 12px;
-      border:2px solid var(--rh-green); background:transparent; color:var(--rh-green);
-    }
-    .btn-wallet.connected { background:var(--rh-green); color:#000; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
 
-    .status { font-size:6px; padding:10px; background:var(--bg); border:1px solid var(--border); margin-top:10px; line-height:1.7; }
+    .status-row { margin-top:10px; font-size:7px; line-height:1.5; }
+    .status { padding:8px; background:var(--bg); border:1px solid var(--border); font-size:7px; line-height:1.5; }
     .warn { color:#ffaa00; }
     .accent { color:var(--rh-green); }
     .muted { color:var(--muted); }
 
-    .wallet-row { display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px; }
-
-    .footer-links { text-align:center; padding:24px 0 36px; font-size:7px; }
-    .footer-links a { color:var(--muted); text-decoration:none; margin:0 6px; }
-    .footer-links a:hover { color:var(--rh-green); }
-
-    .not-live {
-      border:2px solid #ffaa00; color:#ffaa00; font-size:7px; padding:12px;
-      text-align:center; margin-bottom:16px; line-height:1.7;
-    }
-
-    .success-box {
-      display:none; margin-top:10px; padding:12px; border:2px solid var(--rh-green);
-      background:rgba(0,200,5,0.08); text-align:center;
-    }
-    .success-box.show { display:block; }
-    .success-title { font-size:8px; color:var(--rh-green); margin:0 0 6px; letter-spacing:1px; }
-    .success-detail { font-size:6px; color:var(--muted); margin:0 0 8px; line-height:1.8; }
-    #view-oink-tx {
-      display:none; font-size:7px; color:var(--oink); margin-top:8px;
-      text-decoration:none;
-    }
+    #view-oink-tx { display:none; font-size:7px; color:var(--rh-green); margin-top:6px; text-decoration:none; }
     #view-oink-tx.show { display:inline-block; }
-    #view-oink-tx:hover { color:var(--rh-green); text-decoration:underline; }
+    #view-oink-tx:hover { text-decoration:underline; }
 
     .wallet-modal {
       display:none; position:fixed; inset:0; z-index:100;
@@ -129,20 +79,26 @@
       background:var(--card); border:2px solid var(--rh-green); padding:18px;
       width:min(360px,100%); max-height:80vh; overflow-y:auto;
     }
-    .wallet-sheet h3 { font-size:8px; margin:0 0 4px; color:var(--rh-green); }
-    .wallet-sheet p { font-size:6px; color:var(--muted); margin:0 0 12px; line-height:1.7; }
+    .wallet-sheet h3 { font-size:9px; margin:0 0 4px; color:var(--rh-green); }
+    .wallet-sheet p { font-size:7px; color:var(--muted); margin:0 0 12px; line-height:1.6; }
     .wallet-opt {
       display:flex; align-items:center; gap:10px; width:100%; text-align:left;
       background:var(--bg); border:2px solid var(--border); color:var(--text);
-      padding:10px 12px; margin-bottom:8px; cursor:pointer; font-family:inherit; font-size:7px;
+      padding:10px 12px; margin-bottom:8px; cursor:pointer; font-family:inherit; font-size:8px;
     }
     .wallet-opt:hover { border-color:var(--rh-green); color:var(--rh-green); }
     .wallet-opt img { width:24px; height:24px; border-radius:4px; object-fit:contain; }
     .wallet-close {
       background:transparent; border:2px solid var(--border); color:var(--muted);
-      padding:8px 12px; width:100%; font-family:inherit; font-size:7px; cursor:pointer; margin-top:4px;
+      padding:8px 12px; width:100%; font-family:inherit; font-size:8px; cursor:pointer; margin-top:4px;
     }
     .wallet-close:hover { border-color:var(--muted); color:var(--text); }
+
+    @media (max-width:720px) {
+      body { overflow-y:auto; height:auto; min-height:100dvh; }
+      .page { align-items:flex-start; padding:20px 0 32px; }
+      .claim-meta { text-align:left; }
+    }
   </style>
 </head>
 <body>
@@ -150,73 +106,43 @@
 <nav>
   <div class="container nav">
     <a class="logo" href="index.html">PIXELPIGS</a>
-    <div class="nav-links">
-      <a href="index.html">mint</a>
-      <a href="legendary.html">legendary</a>
-      <a href="stats.html">stats</a>
-      <a href="oink.html" class="active">$oink</a>
-    </div>
+    <button type="button" class="btn-wallet" id="wallet-btn">CONNECT WALLET</button>
   </div>
 </nav>
 
-<header class="hero container">
-  <h1>$OINK</h1>
-  <p>Holder rewards for PixelPigs. One claim per pig — legendaries earn 3×.</p>
-</header>
-
-<main class="container">
-  <div class="not-live" id="not-live" style="display:none">
-    $OINK contracts not wired yet — deploy via contract/OINK.md, then update addresses in this page.
-  </div>
-
-  <section class="panel">
-    <div class="wallet-row">
-      <h2>CLAIM</h2>
-      <button type="button" class="btn btn-wallet" id="wallet-btn">CONNECT</button>
+<main class="page">
+  <div class="container claim-section">
+    <div class="claim-head">
+      <h1>$OINK</h1>
+      <div class="claim-meta">100k per pig<br>300k legendary</div>
     </div>
 
-    <div class="rates">
-      <strong>100,000 OINK</strong> per pig · <strong>300,000 OINK</strong> per legendary (3×)<br>
-      Claim once per token ID. Sell the pig later — buyer does not re-claim.
+    <div class="stat-row"><span>unclaimed pigs</span><span class="val" id="pig-count">—</span></div>
+    <div class="stat-row"><span>claimable</span><span class="val" id="claimable">—</span></div>
+    <div class="stat-row"><span>your balance</span><span class="val" id="oink-bal">—</span></div>
+
+    <div class="pig-list" id="pig-list">connect wallet</div>
+
+    <div class="ca-line">
+      OINK <a href="https://robinhoodchain.blockscout.com/address/0xF2c5F81F291E80BFC59e66E6D027C23471ED745b" target="_blank" rel="noopener">0xF2c5…745b</a>
     </div>
-
-    <div class="stat-row"><span>your pigs (unclaimed)</span><span class="val" id="pig-count">—</span></div>
-    <div class="stat-row"><span>claimable $OINK</span><span class="val" id="claimable">—</span></div>
-    <div class="stat-row"><span>your OINK balance</span><span class="val" id="oink-bal">—</span></div>
-    <div class="stat-row"><span>vault remaining</span><span class="val" id="vault">—</span></div>
-
-    <div class="ca-block">
-      <div><strong style="color:var(--text)">$OINK CA</strong></div>
-      <a id="oink-ca-link" href="https://robinhoodchain.blockscout.com/address/0xF2c5F81F291E80BFC59e66E6D027C23471ED745b" target="_blank" rel="noopener">0xF2c5F81F291E80BFC59e66E6D027C23471ED745b</a>
-      <div style="margin-top:6px"><strong style="color:var(--text)">claim contract</strong></div>
-      <a id="claim-ca-link" href="https://robinhoodchain.blockscout.com/address/0x51fA1E5fD4B0B2F0318B0cE712d1958010A4265f" target="_blank" rel="noopener">0x51fA1E5fD4B0B2F0318B0cE712d1958010A4265f</a>
-    </div>
-
-    <div class="pig-list" id="pig-list">connect wallet to scan your pigs</div>
 
     <button type="button" class="btn" id="claim-btn" disabled>CLAIM OINK</button>
-    <div class="status muted" id="status">connect wallet on robinhood chain</div>
-    <div class="success-box" id="success-box">
-      <p class="success-title">OINK CLAIMED</p>
-      <p class="success-detail" id="success-detail"></p>
+
+    <div class="status-row">
+      <div class="status muted" id="status">connect wallet on robinhood chain</div>
       <a id="view-oink-tx" href="#" target="_blank" rel="noopener">view oink tx →</a>
     </div>
-  </section>
+  </div>
 </main>
 
 <div class="wallet-modal" id="wallet-modal" role="dialog" aria-label="Choose wallet">
   <div class="wallet-sheet">
     <h3>CONNECT WALLET</h3>
-    <p>Robinhood Chain (4663). Pick your wallet — MetaMask, OKX, Rabby, Robinhood Wallet, etc.</p>
+    <p>Robinhood Chain (4663). Pick MetaMask, OKX, Rabby, or another EVM wallet.</p>
     <div id="wallet-options"></div>
     <button type="button" class="wallet-close" id="wallet-close">cancel</button>
   </div>
-</div>
-
-<div class="container footer-links">
-  <a href="index.html">mint</a>
-  <a href="legendary.html">legendary board</a>
-  <a href="stats.html">stats</a>
 </div>
 
 <script>
@@ -228,36 +154,22 @@
   const EXPLORER = "https://robinhoodchain.blockscout.com";
 
   const LEGENDARY = new Set([1, 43, 70, 421, 501, 778, 889, 1002, 1338, 2025, 3142, 3333]);
-  const BASE = 100_000n;
-  const LEGENDARY_MULT = 3n;
 
   const PIGS_ABI = [
     "function ownerOf(uint256) view returns (address)",
-    "function totalSupply() view returns (uint256)",
-    "function balanceOf(address) view returns (uint256)"
+    "function totalSupply() view returns (uint256)"
   ];
-  const OINK_ABI = [
-    "function balanceOf(address) view returns (uint256)",
-    "function symbol() view returns (string)"
-  ];
+  const OINK_ABI = ["function balanceOf(address) view returns (uint256)"];
   const CLAIM_ABI = [
     "function claim(uint256[] tokenIds)",
     "function claimableFor(address holder, uint256 tokenId) view returns (uint256)",
-    "function claimed(uint256) view returns (bool)",
-    "function remainingInVault() view returns (uint256)",
     "function paused() view returns (bool)"
   ];
-
-  const CONTRACTS_LIVE = !OINK_ADDRESS.startsWith("0x0000") && !CLAIM_ADDRESS.startsWith("0x0000");
 
   let walletProvider = null;
   let provider, signer, userAddress;
   let claimableIds = [];
   let claimableTotal = 0n;
-  let scanTimer = null;
-  let claimTimer = null;
-  const SCAN_FRAMES = ["oink", "oink oink", "oink oink oink"];
-  const CLAIM_FRAMES = ["claiming oink", "oink incoming", "landing oink"];
 
   const eip6963Providers = [];
   window.addEventListener("eip6963:announceProvider", (event) => {
@@ -287,26 +199,20 @@
   }
 
   function setStatus(msg, cls = "muted") {
-    const el = document.getElementById("status");
-    el.className = `status ${cls}`;
-    el.textContent = msg;
+    document.getElementById("status").className = `status ${cls}`;
+    document.getElementById("status").textContent = msg;
   }
 
-  function hideSuccess() {
-    document.getElementById("success-box").classList.remove("show");
+  function hideViewTx() {
     const link = document.getElementById("view-oink-tx");
     link.classList.remove("show");
     link.href = "#";
   }
 
-  function showSuccess(amountWei, pigCount, txHash) {
-    document.getElementById("success-detail").textContent =
-      `+${fmtOink(amountWei)} landed in your wallet · ${pigCount} pig${pigCount === 1 ? "" : "s"} claimed`;
-    document.getElementById("success-box").classList.add("show");
+  function showViewTx(hash) {
     const link = document.getElementById("view-oink-tx");
-    link.href = `${EXPLORER}/tx/${txHash}`;
+    link.href = `${EXPLORER}/tx/${hash}`;
     link.classList.add("show");
-    setStatus("claim successful — oink oink", "accent");
   }
 
   function providerLabel(p) {
@@ -321,31 +227,50 @@
   function collectWallets() {
     const seen = new Set();
     const list = [];
-
     function add(provider, name, icon) {
       if (!provider || seen.has(provider)) return;
       seen.add(provider);
       list.push({ provider, name: name || "Wallet", icon: icon || "" });
     }
-
     for (const detail of eip6963Providers) {
       add(detail.provider, detail.info?.name, detail.info?.icon);
     }
     if (window.ethereum?.providers?.length) {
-      for (const p of window.ethereum.providers) {
-        add(p, providerLabel(p), null);
-      }
+      for (const p of window.ethereum.providers) add(p, providerLabel(p), null);
     } else if (window.ethereum) {
       add(window.ethereum, providerLabel(window.ethereum), null);
     }
     if (window.rabby) add(window.rabby, "Rabby", null);
     if (window.coinbaseWalletExtension) add(window.coinbaseWalletExtension, "Coinbase Wallet", null);
-
     return list;
   }
 
   function closeWalletModal() {
     document.getElementById("wallet-modal").classList.remove("open");
+  }
+
+  async function openWalletModal() {
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+    await new Promise((r) => setTimeout(r, 120));
+    const container = document.getElementById("wallet-options");
+    container.innerHTML = "";
+    const options = collectWallets();
+    if (!options.length) {
+      container.innerHTML = '<p style="font-size:7px;color:#ffaa00;line-height:1.6">No wallet found. Install MetaMask, OKX, or Rabby.</p>';
+    } else {
+      for (const opt of options) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "wallet-opt";
+        const icon = opt.icon
+          ? `<img src="${opt.icon}" alt="" width="24" height="24">`
+          : `<span style="width:24px;text-align:center">◎</span>`;
+        btn.innerHTML = `${icon}<span>${opt.name}</span>`;
+        btn.addEventListener("click", () => connectWithProvider(opt.provider));
+        container.appendChild(btn);
+      }
+    }
+    document.getElementById("wallet-modal").classList.add("open");
   }
 
   function bindWalletEvents(eth) {
@@ -362,131 +287,20 @@
     eth.on("chainChanged", () => location.reload());
   }
 
-  async function openWalletModal() {
-    window.dispatchEvent(new Event("eip6963:requestProvider"));
-    await new Promise((r) => setTimeout(r, 120));
-    const options = collectWallets();
-    const container = document.getElementById("wallet-options");
-    container.innerHTML = "";
-
-    if (!options.length) {
-      container.innerHTML = '<p style="font-size:6px;color:#ffaa00;line-height:1.7">No wallet found. Install MetaMask, OKX, Rabby, or open in Robinhood Wallet browser.</p>';
-    } else {
-      for (const opt of options) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "wallet-opt";
-        const icon = opt.icon
-          ? `<img src="${opt.icon}" alt="" width="24" height="24">`
-          : `<span style="width:24px;text-align:center;font-size:10px">◎</span>`;
-        btn.innerHTML = `${icon}<span>${opt.name}</span>`;
-        btn.addEventListener("click", () => connectWithProvider(opt.provider, opt.name));
-        container.appendChild(btn);
-      }
-    }
-
-    document.getElementById("wallet-modal").classList.add("open");
-  }
-
-  function renderLoadingBox(msg, subtitle) {
-    return (
-      `<span class="scan-msg">${msg}</span><br>` +
-      `<span class="scan-dots"><span>.</span><span>.</span><span>.</span></span><br>` +
-      `<span style="font-size:6px;color:var(--muted);margin-top:6px;display:inline-block">${subtitle}</span>`
-    );
-  }
-
-  function stopScanLoading() {
-    if (scanTimer) {
-      clearInterval(scanTimer);
-      scanTimer = null;
-    }
-    if (!claimTimer) {
-      document.getElementById("pig-list").classList.remove("is-scanning");
-    }
-    ["pig-count", "claimable", "oink-bal"].forEach((id) => {
-      document.getElementById(id).classList.remove("is-loading");
-    });
-  }
-
-  function stopClaimLoading() {
-    if (claimTimer) {
-      clearInterval(claimTimer);
-      claimTimer = null;
-    }
-    document.getElementById("pig-list").classList.remove("is-scanning");
-    const btn = document.getElementById("claim-btn");
-    btn.textContent = "CLAIM OINK";
-    btn.classList.remove("is-claiming");
-  }
-
-  function startClaimLoading(phase, txHash) {
-    stopClaimLoading();
-    const btn = document.getElementById("claim-btn");
-    btn.disabled = true;
-    btn.textContent = phase === "wallet" ? "CONFIRM IN WALLET" : "OINKING…";
-    btn.classList.add("is-claiming");
-
-    const pigList = document.getElementById("pig-list");
-    pigList.classList.add("is-scanning");
-    let frame = 0;
-
-    const subtitles = {
-      wallet: "approve the claim in your wallet",
-      chain: txHash
-        ? `tx ${shortAddr(txHash)} — waiting for block`
-        : "transaction submitted — waiting for chain",
-    };
-
-    const tick = () => {
-      const msg = CLAIM_FRAMES[frame % CLAIM_FRAMES.length];
-      pigList.innerHTML = renderLoadingBox(msg, subtitles[phase] || "processing claim");
-      setStatus(
-        phase === "wallet" ? `${msg} — confirm in wallet` : `${msg} — on chain`,
-        "muted"
-      );
-      frame++;
-    };
-
-    tick();
-    claimTimer = setInterval(tick, 500);
-  }
-
-  function startScanLoading() {
-    stopScanLoading();
-    document.getElementById("claim-btn").disabled = true;
-    ["pig-count", "claimable", "oink-bal"].forEach((id) => {
-      const el = document.getElementById(id);
-      el.textContent = "···";
-      el.classList.add("is-loading");
-    });
-    const pigList = document.getElementById("pig-list");
-    pigList.classList.add("is-scanning");
-    let frame = 0;
-    const tick = () => {
-      const msg = SCAN_FRAMES[frame % SCAN_FRAMES.length];
-      pigList.innerHTML = renderLoadingBox(msg, "checking your pigs on chain");
-      setStatus(`${msg} — sniffing holdings`, "muted");
-      frame++;
-    };
-    tick();
-    scanTimer = setInterval(tick, 500);
-  }
-
   function disconnect() {
-    stopScanLoading();
     walletProvider = null;
     signer = null;
     userAddress = null;
-    document.getElementById("wallet-btn").textContent = "CONNECT";
-    document.getElementById("wallet-btn").classList.remove("connected");
-    hideSuccess();
-    setStatus("disconnected — pick a wallet to connect", "muted");
+    document.getElementById("wallet-btn").textContent = "CONNECT WALLET";
+    document.getElementById("wallet-btn").classList.remove("is-connected");
+    hideViewTx();
+    setStatus("connect wallet on robinhood chain", "muted");
     document.getElementById("pig-count").textContent = "—";
     document.getElementById("claimable").textContent = "—";
     document.getElementById("oink-bal").textContent = "—";
-    document.getElementById("pig-list").textContent = "connect wallet to scan your pigs";
+    document.getElementById("pig-list").textContent = "connect wallet";
     document.getElementById("claim-btn").disabled = true;
+    document.getElementById("claim-btn").textContent = "CLAIM OINK";
   }
 
   async function ensureChain(eth) {
@@ -502,9 +316,9 @@
     }
   }
 
-  async function connectWithProvider(eth, name) {
+  async function connectWithProvider(eth) {
     closeWalletModal();
-    hideSuccess();
+    hideViewTx();
     try {
       await ensureChain(eth);
       const accounts = await eth.request({ method: "eth_requestAccounts" });
@@ -514,112 +328,78 @@
       signer = await provider.getSigner();
       userAddress = accounts[0];
       document.getElementById("wallet-btn").textContent = shortAddr(userAddress);
-      document.getElementById("wallet-btn").classList.add("connected");
-      setStatus(`connected via ${name}`, "accent");
+      document.getElementById("wallet-btn").classList.add("is-connected");
       await refresh();
     } catch (err) {
       const msg = err?.message || String(err);
-      if (/user rejected|denied/i.test(msg)) {
-        setStatus("cancelled in wallet", "warn");
-      } else {
-        setStatus(msg || "connect failed", "warn");
-      }
+      setStatus(/user rejected|denied/i.test(msg) ? "cancelled in wallet" : msg, "warn");
     }
   }
 
   async function onWalletClick() {
-    if (userAddress) {
-      disconnect();
-      return;
-    }
+    if (userAddress) { disconnect(); return; }
     await openWalletModal();
   }
 
   async function scanClaimable() {
-    if (!userAddress || !CONTRACTS_LIVE) return;
+    if (!userAddress) return;
 
-    startScanLoading();
+    setStatus("scanning pigs…", "muted");
+    document.getElementById("claim-btn").disabled = true;
 
     const pigs = new ethers.Contract(PIGS_ADDRESS, PIGS_ABI, provider);
     const claim = new ethers.Contract(CLAIM_ADDRESS, CLAIM_ABI, provider);
 
     try {
-    if (await claim.paused()) {
-      stopScanLoading();
-      setStatus("claims paused by admin", "warn");
-      document.getElementById("claim-btn").disabled = true;
-      return;
-    }
+      if (await claim.paused()) {
+        setStatus("claims paused", "warn");
+        return;
+      }
 
-    const supply = Number(await pigs.totalSupply());
-    claimableIds = [];
-    claimableTotal = 0n;
-    const lines = [];
+      const supply = Number(await pigs.totalSupply());
+      claimableIds = [];
+      claimableTotal = 0n;
+      const lines = [];
 
-    for (let id = 1; id <= supply; id++) {
-      try {
-        const owner = await pigs.ownerOf(id);
-        if (owner.toLowerCase() !== userAddress.toLowerCase()) continue;
-        const amount = await claim.claimableFor(userAddress, id);
-        if (amount === 0n) continue;
-        claimableIds.push(id);
-        claimableTotal += amount;
-        const leg = LEGENDARY.has(id) ? ' class="leg"' : "";
-        lines.push(`<span${leg}>#${id} → ${fmtOink(amount)}</span>`);
-      } catch { /* not minted */ }
-    }
+      for (let id = 1; id <= supply; id++) {
+        try {
+          const owner = await pigs.ownerOf(id);
+          if (owner.toLowerCase() !== userAddress.toLowerCase()) continue;
+          const amount = await claim.claimableFor(userAddress, id);
+          if (amount === 0n) continue;
+          claimableIds.push(id);
+          claimableTotal += amount;
+          const leg = LEGENDARY.has(id) ? ' class="leg"' : "";
+          lines.push(`<span${leg}>#${id} ${fmtOink(amount)}</span>`);
+        } catch { /* skip */ }
+      }
 
-    stopScanLoading();
-    document.getElementById("pig-count").textContent = String(claimableIds.length);
-    document.getElementById("pig-count").classList.remove("is-loading");
-    document.getElementById("claimable").textContent = claimableIds.length ? fmtOink(claimableTotal) : "0 OINK";
-    document.getElementById("claimable").classList.remove("is-loading");
-    document.getElementById("pig-list").innerHTML = lines.length
-      ? lines.join("<br>")
-      : (supply === 0 ? "no pigs minted yet" : "no unclaimed pigs in your wallet");
+      document.getElementById("pig-count").textContent = String(claimableIds.length);
+      document.getElementById("claimable").textContent = claimableIds.length ? fmtOink(claimableTotal) : "0 OINK";
+      document.getElementById("pig-list").innerHTML = lines.length
+        ? lines.join("<br>")
+        : (supply === 0 ? "no pigs minted yet" : "nothing to claim");
 
-    document.getElementById("claim-btn").disabled = claimableIds.length === 0;
+      document.getElementById("claim-btn").disabled = claimableIds.length === 0;
+      setStatus(claimableIds.length ? "ready to claim" : "no unclaimed pigs", claimableIds.length ? "accent" : "muted");
     } catch (err) {
-      stopScanLoading();
       console.error(err);
-      setStatus("scan failed — try refresh", "warn");
-      document.getElementById("pig-list").textContent = "could not read pigs — try again";
+      setStatus("scan failed — reconnect wallet", "warn");
+      document.getElementById("pig-list").textContent = "scan failed";
     }
   }
 
   async function refresh() {
-    if (!CONTRACTS_LIVE) {
-      document.getElementById("not-live").style.display = "block";
-      setStatus("contracts not deployed — see contract/OINK.md", "warn");
-      return;
-    }
-
-    document.getElementById("not-live").style.display = "none";
-
-    const pigs = new ethers.Contract(PIGS_ADDRESS, PIGS_ABI, provider);
-    const oink = new ethers.Contract(OINK_ADDRESS, OINK_ABI, provider);
-    const claim = new ethers.Contract(CLAIM_ADDRESS, CLAIM_ABI, provider);
-
-    try {
-      const vault = await claim.remainingInVault();
-      document.getElementById("vault").textContent = fmtOink(vault);
-    } catch {
-      document.getElementById("vault").textContent = "—";
-    }
-
     if (!userAddress) return;
 
-    await scanClaimable();
-
+    const oink = new ethers.Contract(OINK_ADDRESS, OINK_ABI, provider);
     try {
-      const bal = await oink.balanceOf(userAddress);
-      document.getElementById("oink-bal").textContent = fmtOink(bal);
-      document.getElementById("oink-bal").classList.remove("is-loading");
+      document.getElementById("oink-bal").textContent = fmtOink(await oink.balanceOf(userAddress));
     } catch {
       document.getElementById("oink-bal").textContent = "—";
-      document.getElementById("oink-bal").classList.remove("is-loading");
     }
-    setStatus("ready — claim sends OINK to your wallet", "accent");
+
+    await scanClaimable();
   }
 
   async function claimOink() {
@@ -627,26 +407,28 @@
     const btn = document.getElementById("claim-btn");
     const claimedAmount = claimableTotal;
     const claimedCount = claimableIds.length;
-    hideSuccess();
-    startClaimLoading("wallet");
+
+    hideViewTx();
+    btn.disabled = true;
+    btn.textContent = "CONFIRM IN WALLET...";
+    setStatus("confirm in wallet…", "muted");
 
     try {
       const claim = new ethers.Contract(CLAIM_ADDRESS, CLAIM_ABI, signer);
       const tx = await claim.claim(claimableIds);
-      startClaimLoading("chain", tx.hash);
+      btn.textContent = "CLAIMING...";
+      setStatus("confirming claim…", "muted");
       const receipt = await tx.wait();
       const hash = receipt?.hash || tx.hash;
-      stopClaimLoading();
-      showSuccess(claimedAmount, claimedCount, hash);
+
+      showViewTx(hash);
+      setStatus(`claimed ${fmtOink(claimedAmount)} · ${claimedCount} pig${claimedCount === 1 ? "" : "s"}`, "accent");
+      btn.textContent = "CLAIM OINK";
       await refresh();
     } catch (err) {
-      stopClaimLoading();
       const msg = err?.reason || err?.shortMessage || err?.message || "claim failed";
-      if (/user rejected|denied/i.test(msg)) {
-        setStatus("cancelled in wallet", "warn");
-      } else {
-        setStatus(msg, "warn");
-      }
+      setStatus(/user rejected|denied/i.test(msg) ? "cancelled in wallet" : msg, "warn");
+      btn.textContent = "CLAIM OINK";
       btn.disabled = claimableIds.length === 0;
       await refresh();
     }
@@ -659,14 +441,7 @@
   });
   document.getElementById("claim-btn").addEventListener("click", claimOink);
 
-  if (!CONTRACTS_LIVE) {
-    document.getElementById("not-live").style.display = "block";
-    setStatus("deploy $OINK then set OINK_ADDRESS + CLAIM_ADDRESS in oink.html", "warn");
-  } else {
-    const pub = new ethers.JsonRpcProvider(RPC_URL);
-    provider = pub;
-    refresh();
-  }
+  provider = new ethers.JsonRpcProvider(RPC_URL);
 </script>
 </body>
 </html>
