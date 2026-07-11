@@ -76,6 +76,44 @@
       border:2px solid #ffaa00; color:#ffaa00; font-size:7px; padding:12px;
       text-align:center; margin-bottom:16px; line-height:1.7;
     }
+
+    .success-box {
+      display:none; margin-top:10px; padding:12px; border:2px solid var(--rh-green);
+      background:rgba(0,200,5,0.08); text-align:center;
+    }
+    .success-box.show { display:block; }
+    .success-title { font-size:8px; color:var(--rh-green); margin:0 0 6px; letter-spacing:1px; }
+    .success-detail { font-size:6px; color:var(--muted); margin:0 0 8px; line-height:1.8; }
+    #view-oink-tx {
+      display:none; font-size:7px; color:var(--oink); margin-top:8px;
+      text-decoration:none;
+    }
+    #view-oink-tx.show { display:inline-block; }
+    #view-oink-tx:hover { color:var(--rh-green); text-decoration:underline; }
+
+    .wallet-modal {
+      display:none; position:fixed; inset:0; z-index:100;
+      background:rgba(0,0,0,0.85); align-items:center; justify-content:center; padding:20px;
+    }
+    .wallet-modal.open { display:flex; }
+    .wallet-sheet {
+      background:var(--card); border:2px solid var(--rh-green); padding:18px;
+      width:min(360px,100%); max-height:80vh; overflow-y:auto;
+    }
+    .wallet-sheet h3 { font-size:8px; margin:0 0 4px; color:var(--rh-green); }
+    .wallet-sheet p { font-size:6px; color:var(--muted); margin:0 0 12px; line-height:1.7; }
+    .wallet-opt {
+      display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+      background:var(--bg); border:2px solid var(--border); color:var(--text);
+      padding:10px 12px; margin-bottom:8px; cursor:pointer; font-family:inherit; font-size:7px;
+    }
+    .wallet-opt:hover { border-color:var(--rh-green); color:var(--rh-green); }
+    .wallet-opt img { width:24px; height:24px; border-radius:4px; object-fit:contain; }
+    .wallet-close {
+      background:transparent; border:2px solid var(--border); color:var(--muted);
+      padding:8px 12px; width:100%; font-family:inherit; font-size:7px; cursor:pointer; margin-top:4px;
+    }
+    .wallet-close:hover { border-color:var(--muted); color:var(--text); }
   </style>
 </head>
 <body>
@@ -122,8 +160,22 @@
 
     <button type="button" class="btn" id="claim-btn" disabled>CLAIM OINK</button>
     <div class="status muted" id="status">connect wallet on robinhood chain</div>
+    <div class="success-box" id="success-box">
+      <p class="success-title">OINK CLAIMED</p>
+      <p class="success-detail" id="success-detail"></p>
+      <a id="view-oink-tx" href="#" target="_blank" rel="noopener">view oink tx →</a>
+    </div>
   </section>
 </main>
+
+<div class="wallet-modal" id="wallet-modal" role="dialog" aria-label="Choose wallet">
+  <div class="wallet-sheet">
+    <h3>CONNECT WALLET</h3>
+    <p>Robinhood Chain (4663). Pick your wallet — MetaMask, OKX, Rabby, Robinhood Wallet, etc.</p>
+    <div id="wallet-options"></div>
+    <button type="button" class="wallet-close" id="wallet-close">cancel</button>
+  </div>
+</div>
 
 <div class="container footer-links">
   <a href="index.html">mint</a>
@@ -162,9 +214,20 @@
 
   const CONTRACTS_LIVE = !OINK_ADDRESS.startsWith("0x0000") && !CLAIM_ADDRESS.startsWith("0x0000");
 
+  let walletProvider = null;
   let provider, signer, userAddress;
   let claimableIds = [];
   let claimableTotal = 0n;
+
+  const eip6963Providers = [];
+  window.addEventListener("eip6963:announceProvider", (event) => {
+    if (!event.detail?.provider) return;
+    const exists = eip6963Providers.some(
+      (p) => p.info?.uuid === event.detail.info?.uuid || p.provider === event.detail.provider
+    );
+    if (!exists) eip6963Providers.push(event.detail);
+  });
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
 
   const ROBINHOOD_CHAIN = {
     chainId: "0x1237",
@@ -189,12 +252,115 @@
     el.textContent = msg;
   }
 
-  function getWallet() {
-    if (window.ethereum?.providers?.length) {
-      const mm = window.ethereum.providers.find((p) => p.isMetaMask);
-      return mm || window.ethereum.providers[0];
+  function hideSuccess() {
+    document.getElementById("success-box").classList.remove("show");
+    const link = document.getElementById("view-oink-tx");
+    link.classList.remove("show");
+    link.href = "#";
+  }
+
+  function showSuccess(amountWei, pigCount, txHash) {
+    document.getElementById("success-detail").textContent =
+      `+${fmtOink(amountWei)} landed in your wallet · ${pigCount} pig${pigCount === 1 ? "" : "s"} claimed`;
+    document.getElementById("success-box").classList.add("show");
+    const link = document.getElementById("view-oink-tx");
+    link.href = `${EXPLORER}/tx/${txHash}`;
+    link.classList.add("show");
+    setStatus("claim successful — oink oink", "accent");
+  }
+
+  function providerLabel(p) {
+    if (p.isMetaMask) return "MetaMask";
+    if (p.isOkxWallet || p.isOKExWallet) return "OKX Wallet";
+    if (p.isRabby) return "Rabby";
+    if (p.isCoinbaseWallet) return "Coinbase Wallet";
+    if (p.isBraveWallet) return "Brave Wallet";
+    return "Browser Wallet";
+  }
+
+  function collectWallets() {
+    const seen = new Set();
+    const list = [];
+
+    function add(provider, name, icon) {
+      if (!provider || seen.has(provider)) return;
+      seen.add(provider);
+      list.push({ provider, name: name || "Wallet", icon: icon || "" });
     }
-    return window.ethereum || null;
+
+    for (const detail of eip6963Providers) {
+      add(detail.provider, detail.info?.name, detail.info?.icon);
+    }
+    if (window.ethereum?.providers?.length) {
+      for (const p of window.ethereum.providers) {
+        add(p, providerLabel(p), null);
+      }
+    } else if (window.ethereum) {
+      add(window.ethereum, providerLabel(window.ethereum), null);
+    }
+    if (window.rabby) add(window.rabby, "Rabby", null);
+    if (window.coinbaseWalletExtension) add(window.coinbaseWalletExtension, "Coinbase Wallet", null);
+
+    return list;
+  }
+
+  function closeWalletModal() {
+    document.getElementById("wallet-modal").classList.remove("open");
+  }
+
+  function bindWalletEvents(eth) {
+    if (!eth?.on || eth._oinkBound) return;
+    eth._oinkBound = true;
+    eth.on("accountsChanged", (accounts) => {
+      if (!accounts?.length) disconnect();
+      else {
+        userAddress = accounts[0];
+        document.getElementById("wallet-btn").textContent = shortAddr(userAddress);
+        refresh();
+      }
+    });
+    eth.on("chainChanged", () => location.reload());
+  }
+
+  async function openWalletModal() {
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+    await new Promise((r) => setTimeout(r, 120));
+    const options = collectWallets();
+    const container = document.getElementById("wallet-options");
+    container.innerHTML = "";
+
+    if (!options.length) {
+      container.innerHTML = '<p style="font-size:6px;color:#ffaa00;line-height:1.7">No wallet found. Install MetaMask, OKX, Rabby, or open in Robinhood Wallet browser.</p>';
+    } else {
+      for (const opt of options) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "wallet-opt";
+        const icon = opt.icon
+          ? `<img src="${opt.icon}" alt="" width="24" height="24">`
+          : `<span style="width:24px;text-align:center;font-size:10px">◎</span>`;
+        btn.innerHTML = `${icon}<span>${opt.name}</span>`;
+        btn.addEventListener("click", () => connectWithProvider(opt.provider, opt.name));
+        container.appendChild(btn);
+      }
+    }
+
+    document.getElementById("wallet-modal").classList.add("open");
+  }
+
+  function disconnect() {
+    walletProvider = null;
+    signer = null;
+    userAddress = null;
+    document.getElementById("wallet-btn").textContent = "CONNECT";
+    document.getElementById("wallet-btn").classList.remove("connected");
+    hideSuccess();
+    setStatus("disconnected — pick a wallet to connect", "muted");
+    document.getElementById("pig-count").textContent = "—";
+    document.getElementById("claimable").textContent = "—";
+    document.getElementById("oink-bal").textContent = "—";
+    document.getElementById("pig-list").textContent = "connect wallet to scan your pigs";
+    document.getElementById("claim-btn").disabled = true;
   }
 
   async function ensureChain(eth) {
@@ -210,24 +376,37 @@
     }
   }
 
-  async function connect() {
-    const eth = getWallet();
-    if (!eth) {
-      setStatus("no wallet — use robinhood / metamask on this browser", "warn");
-      return;
-    }
+  async function connectWithProvider(eth, name) {
+    closeWalletModal();
+    hideSuccess();
     try {
       await ensureChain(eth);
       const accounts = await eth.request({ method: "eth_requestAccounts" });
+      walletProvider = eth;
+      bindWalletEvents(eth);
       provider = new ethers.BrowserProvider(eth);
       signer = await provider.getSigner();
       userAddress = accounts[0];
       document.getElementById("wallet-btn").textContent = shortAddr(userAddress);
       document.getElementById("wallet-btn").classList.add("connected");
+      setStatus(`connected via ${name}`, "accent");
       await refresh();
     } catch (err) {
-      setStatus(err.message || "connect failed", "warn");
+      const msg = err?.message || String(err);
+      if (/user rejected|denied/i.test(msg)) {
+        setStatus("cancelled in wallet", "warn");
+      } else {
+        setStatus(msg || "connect failed", "warn");
+      }
     }
+  }
+
+  async function onWalletClick() {
+    if (userAddress) {
+      disconnect();
+      return;
+    }
+    await openWalletModal();
   }
 
   async function scanClaimable() {
@@ -305,23 +484,36 @@
   async function claimOink() {
     if (!signer || claimableIds.length === 0) return;
     const btn = document.getElementById("claim-btn");
+    const claimedAmount = claimableTotal;
+    const claimedCount = claimableIds.length;
     btn.disabled = true;
+    hideSuccess();
     setStatus("confirm claim in wallet…", "muted");
 
     try {
       const claim = new ethers.Contract(CLAIM_ADDRESS, CLAIM_ABI, signer);
       const tx = await claim.claim(claimableIds);
-      setStatus(`submitted ${shortAddr(tx.hash)}…`, "accent");
-      await tx.wait();
-      setStatus(`claimed ${fmtOink(claimableTotal)} — oink oink`, "accent");
+      setStatus(`submitted — waiting for chain…`, "muted");
+      const receipt = await tx.wait();
+      const hash = receipt?.hash || tx.hash;
+      showSuccess(claimedAmount, claimedCount, hash);
       await refresh();
     } catch (err) {
-      setStatus(err.reason || err.message || "claim failed", "warn");
+      const msg = err?.reason || err?.shortMessage || err?.message || "claim failed";
+      if (/user rejected|denied/i.test(msg)) {
+        setStatus("cancelled in wallet", "warn");
+      } else {
+        setStatus(msg, "warn");
+      }
       btn.disabled = claimableIds.length === 0;
     }
   }
 
-  document.getElementById("wallet-btn").addEventListener("click", connect);
+  document.getElementById("wallet-btn").addEventListener("click", onWalletClick);
+  document.getElementById("wallet-close").addEventListener("click", closeWalletModal);
+  document.getElementById("wallet-modal").addEventListener("click", (e) => {
+    if (e.target.id === "wallet-modal") closeWalletModal();
+  });
   document.getElementById("claim-btn").addEventListener("click", claimOink);
 
   if (!CONTRACTS_LIVE) {
