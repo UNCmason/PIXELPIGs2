@@ -106,6 +106,30 @@
     #viewpig { display:none; font-size:7px; color:var(--rh-green); margin-top:6px; text-decoration:none; }
     #viewpig:hover { text-decoration:underline; }
 
+    .wallet-modal {
+      display:none; position:fixed; inset:0; z-index:100;
+      background:rgba(0,0,0,0.85); align-items:center; justify-content:center; padding:20px;
+    }
+    .wallet-modal.open { display:flex; }
+    .wallet-sheet {
+      background:var(--card); border:2px solid var(--rh-green); padding:18px;
+      width:min(360px,100%); max-height:80vh; overflow-y:auto;
+    }
+    .wallet-sheet h3 { font-size:9px; margin:0 0 4px; color:var(--rh-green); }
+    .wallet-sheet p { font-size:7px; color:var(--muted); margin:0 0 12px; line-height:1.6; }
+    .wallet-opt {
+      display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+      background:var(--bg); border:2px solid var(--border); color:var(--text);
+      padding:10px 12px; margin-bottom:8px; cursor:pointer; font-family:inherit; font-size:8px;
+    }
+    .wallet-opt:hover { border-color:var(--rh-green); color:var(--rh-green); }
+    .wallet-opt img { width:24px; height:24px; border-radius:4px; object-fit:contain; }
+    .wallet-close {
+      background:transparent; border:2px solid var(--border); color:var(--muted);
+      padding:8px 12px; width:100%; font-family:inherit; font-size:8px; cursor:pointer; margin-top:4px;
+    }
+    .wallet-close:hover { border-color:var(--muted); color:var(--text); }
+
     @media (max-width:720px) {
       body { overflow-y:auto; height:auto; min-height:100dvh; }
       .page { align-items:flex-start; padding:16px 0 24px; }
@@ -200,6 +224,15 @@
     </section>
   </div>
 </main>
+
+<div class="wallet-modal" id="wallet-modal" role="dialog" aria-label="Choose wallet">
+  <div class="wallet-sheet">
+    <h3>CONNECT WALLET</h3>
+    <p>Robinhood Chain (4663). Pick MetaMask, OKX, Rabby, Robinhood Wallet, or another EVM wallet.</p>
+    <div id="wallet-options"></div>
+    <button type="button" class="wallet-close" id="wallet-close">cancel</button>
+  </div>
+</div>
 
 <script>
   // ==================== NFT MASCOT (PixelPig #0003 / 0003.png) ====================
@@ -419,33 +452,77 @@
 
   const eip6963Providers = [];
 
-  // Discover wallets (MetaMask, Rabby, Coinbase, etc.)
   window.addEventListener("eip6963:announceProvider", (event) => {
-    if (event.detail?.provider) eip6963Providers.push(event.detail);
+    if (!event.detail?.provider) return;
+    const exists = eip6963Providers.some(
+      (p) => p.info?.uuid === event.detail.info?.uuid || p.provider === event.detail.provider
+    );
+    if (!exists) eip6963Providers.push(event.detail);
   });
   window.dispatchEvent(new Event("eip6963:requestProvider"));
 
   function getWalletProvider() {
-    if (walletProvider) return walletProvider;
+    return walletProvider || null;
+  }
 
+  function providerLabel(p) {
+    if (p.isMetaMask) return "MetaMask";
+    if (p.isOkxWallet || p.isOKExWallet) return "OKX Wallet";
+    if (p.isRabby) return "Rabby";
+    if (p.isCoinbaseWallet) return "Coinbase Wallet";
+    if (p.isBraveWallet) return "Brave Wallet";
+    return "Browser Wallet";
+  }
+
+  function collectWallets() {
+    const seen = new Set();
+    const list = [];
+    function add(provider, name, icon) {
+      if (!provider || seen.has(provider)) return;
+      seen.add(provider);
+      list.push({ provider, name: name || "Wallet", icon: icon || "" });
+    }
+    for (const detail of eip6963Providers) {
+      add(detail.provider, detail.info?.name, detail.info?.icon);
+    }
     if (window.ethereum?.providers?.length) {
-      const metamask = window.ethereum.providers.find((p) => p.isMetaMask);
-      return metamask || window.ethereum.providers[0];
+      for (const p of window.ethereum.providers) {
+        add(p, providerLabel(p), null);
+      }
+    } else if (window.ethereum) {
+      add(window.ethereum, providerLabel(window.ethereum), null);
     }
-    if (window.ethereum) return window.ethereum;
-    if (window.rabby) return window.rabby;
-    if (window.coinbaseWalletExtension) return window.coinbaseWalletExtension;
+    if (window.rabby) add(window.rabby, "Rabby", null);
+    if (window.coinbaseWalletExtension) add(window.coinbaseWalletExtension, "Coinbase Wallet", null);
+    return list;
+  }
 
-    if (eip6963Providers.length === 1) return eip6963Providers[0].provider;
-    if (eip6963Providers.length > 1) {
-      const names = eip6963Providers.map((p) => p.info?.name || "Wallet").join(", ");
-      const pick = prompt(`Multiple wallets found: ${names}\n\nType the number to use:\n` +
-        eip6963Providers.map((p, i) => `${i + 1}. ${p.info?.name || "Wallet"}`).join("\n"), "1");
-      const idx = Number(pick) - 1;
-      if (idx >= 0 && idx < eip6963Providers.length) return eip6963Providers[idx].provider;
-      return eip6963Providers[0].provider;
+  function closeWalletModal() {
+    document.getElementById("wallet-modal").classList.remove("open");
+  }
+
+  async function openWalletModal() {
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+    await new Promise((r) => setTimeout(r, 120));
+    const options = collectWallets();
+    const container = document.getElementById("wallet-options");
+    container.innerHTML = "";
+    if (!options.length) {
+      container.innerHTML = `<p style="font-size:7px;color:#ffaa00;line-height:1.6">${walletHelpMessage().replace(/\n/g, "<br>")}</p>`;
+    } else {
+      for (const opt of options) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "wallet-opt";
+        const icon = opt.icon
+          ? `<img src="${opt.icon}" alt="" width="24" height="24">`
+          : `<span style="width:24px;text-align:center;font-size:10px">◎</span>`;
+        btn.innerHTML = `${icon}<span>${opt.name}</span>`;
+        btn.addEventListener("click", () => connectWallet(opt.provider));
+        container.appendChild(btn);
+      }
     }
-    return null;
+    document.getElementById("wallet-modal").classList.add("open");
   }
 
   function isMobileDevice() {
@@ -512,7 +589,7 @@
     sessionStorage.setItem("pixelpigs_wallet_off", "1");
     clearWalletSession();
     updateContractStatus();
-    const wp = walletProvider || getWalletProvider();
+    const wp = walletProvider;
     if (wp?.request) {
       wp.request({
         method: "wallet_revokePermissions",
@@ -526,7 +603,7 @@
       disconnectWallet();
       return;
     }
-    await connectWallet();
+    await openWalletModal();
   }
 
   async function getConnectedChainId() {
@@ -598,8 +675,8 @@
   }
 
   function setupWalletListeners() {
-    walletProvider = getWalletProvider();
-    if (!walletProvider?.on) return;
+    if (!walletProvider?.on || walletProvider._ppBound) return;
+    walletProvider._ppBound = true;
 
     walletProvider.on("accountsChanged", (accounts) => {
       if (!accounts?.length) {
@@ -630,7 +707,6 @@
       return;
     }
 
-    walletProvider = getWalletProvider();
     if (!walletProvider) {
       updateWalletUI();
       return;
@@ -890,9 +966,9 @@
   }
 
   async function switchToRobinhoodChain() {
-    const eth = getWalletProvider();
+    const eth = walletProvider;
     if (!eth) {
-      alert(walletHelpMessage());
+      await openWalletModal();
       return;
     }
     try {
@@ -913,12 +989,14 @@
   }
 
   // ==================== WALLET & MINT ====================
-  async function connectWallet() {
-    walletProvider = getWalletProvider();
-    if (!walletProvider) {
-      alert(walletHelpMessage());
+  async function connectWallet(selectedProvider) {
+    if (!selectedProvider && !walletProvider) {
+      await openWalletModal();
       return false;
     }
+
+    walletProvider = selectedProvider || walletProvider;
+    closeWalletModal();
 
     userDisconnected = false;
     sessionStorage.removeItem("pixelpigs_wallet_off");
@@ -1034,7 +1112,10 @@
     document.getElementById("quantity").textContent = quantity;
 
     document.getElementById("wallet-btn").addEventListener("click", toggleWallet);
-    setupWalletListeners();
+    document.getElementById("wallet-close").addEventListener("click", closeWalletModal);
+    document.getElementById("wallet-modal").addEventListener("click", (e) => {
+      if (e.target.id === "wallet-modal") closeWalletModal();
+    });
     await checkWalletConnection();
 
     await fetchEthUsd();

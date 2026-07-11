@@ -42,6 +42,14 @@
 
     .stat-row { display:flex; justify-content:space-between; font-size:7px; margin:8px 0; gap:12px; }
     .stat-row .val { color:var(--rh-green); text-align:right; }
+    .stat-row .val a { color:var(--oink); text-decoration:none; word-break:break-all; }
+    .stat-row .val a:hover { color:var(--rh-green); text-decoration:underline; }
+    .ca-block {
+      font-size:6px; color:var(--muted); border-top:1px solid var(--border);
+      margin-top:12px; padding-top:10px; line-height:1.9;
+    }
+    .ca-block a { color:var(--oink); text-decoration:none; }
+    .ca-block a:hover { color:var(--rh-green); }
 
     .pig-list {
       max-height:160px; overflow-y:auto; font-size:6px; color:var(--muted);
@@ -155,6 +163,13 @@
     <div class="stat-row"><span>claimable $OINK</span><span class="val" id="claimable">—</span></div>
     <div class="stat-row"><span>your OINK balance</span><span class="val" id="oink-bal">—</span></div>
     <div class="stat-row"><span>vault remaining</span><span class="val" id="vault">—</span></div>
+
+    <div class="ca-block">
+      <div><strong style="color:var(--text)">$OINK CA</strong></div>
+      <a id="oink-ca-link" href="https://robinhoodchain.blockscout.com/address/0xF2c5F81F291E80BFC59e66E6D027C23471ED745b" target="_blank" rel="noopener">0xF2c5F81F291E80BFC59e66E6D027C23471ED745b</a>
+      <div style="margin-top:6px"><strong style="color:var(--text)">claim contract</strong></div>
+      <a id="claim-ca-link" href="https://robinhoodchain.blockscout.com/address/0x51fA1E5fD4B0B2F0318B0cE712d1958010A4265f" target="_blank" rel="noopener">0x51fA1E5fD4B0B2F0318B0cE712d1958010A4265f</a>
+    </div>
 
     <div class="pig-list" id="pig-list">connect wallet to scan your pigs</div>
 
