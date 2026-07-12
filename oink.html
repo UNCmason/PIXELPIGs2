@@ -62,6 +62,17 @@
     .btn:hover { background:var(--pig-dim); }
     .btn:disabled { opacity:0.5; cursor:not-allowed; }
 
+    .btn-secondary {
+      margin-top:8px; background:transparent; color:var(--pig);
+      border:2px solid var(--pig); font-size:8px; padding:10px 14px;
+    }
+    .btn-secondary:hover { background:rgba(255,188,148,0.12); }
+    .token-hint {
+      display:none; font-size:6px; color:var(--muted); line-height:1.6;
+      margin-top:6px; text-align:center;
+    }
+    .token-hint.show { display:block; }
+
     .status-row { margin-top:10px; font-size:7px; line-height:1.5; }
     .status { padding:8px; background:var(--bg); border:1px solid var(--border); font-size:7px; line-height:1.5; }
     .warn { color:#ffaa00; }
@@ -130,6 +141,8 @@
     </div>
 
     <button type="button" class="btn" id="claim-btn" disabled>CLAIM OINK</button>
+    <button type="button" class="btn btn-secondary" id="add-oink-btn" hidden>ADD OINK TO WALLET</button>
+    <p class="token-hint" id="token-hint">Only if OINK is missing from your wallet. Already have OINK? Skip — MetaMask may show a security warning if you try to re-add it.</p>
 
     <div class="status-row">
       <div class="status muted" id="status">connect wallet on robinhood chain</div>
@@ -305,12 +318,14 @@
     document.getElementById("pig-list").textContent = "connect wallet";
     document.getElementById("claim-btn").disabled = true;
     document.getElementById("claim-btn").textContent = "CLAIM OINK";
+    showAddOinkControls(false);
   }
 
-  async function suggestOinkInWallet(eth) {
-    if (sessionStorage.getItem("oink-watch-asset")) return;
+  async function addOinkToWallet() {
+    if (!walletProvider) return;
+    setStatus("check your wallet to add OINK…", "muted");
     try {
-      await eth.request({
+      const added = await walletProvider.request({
         method: "wallet_watchAsset",
         params: {
           type: "ERC20",
@@ -322,10 +337,16 @@
           },
         },
       });
-      sessionStorage.setItem("oink-watch-asset", "1");
-    } catch (_) {
-      /* user dismissed or wallet unsupported */
+      setStatus(added ? "OINK added to wallet" : "not added — you can skip if OINK already shows", added ? "accent" : "muted");
+    } catch (err) {
+      const msg = err?.message || String(err);
+      setStatus(/user rejected|denied/i.test(msg) ? "cancelled in wallet" : "wallet could not add OINK", "warn");
     }
+  }
+
+  function showAddOinkControls(visible) {
+    document.getElementById("add-oink-btn").hidden = !visible;
+    document.getElementById("token-hint").classList.toggle("show", visible);
   }
 
   async function ensureChain(eth) {
@@ -355,7 +376,7 @@
       document.getElementById("wallet-btn").textContent = shortAddr(userAddress);
       document.getElementById("wallet-btn").classList.add("is-connected");
       await refresh();
-      suggestOinkInWallet(eth);
+      showAddOinkControls(true);
     } catch (err) {
       const msg = err?.message || String(err);
       setStatus(/user rejected|denied/i.test(msg) ? "cancelled in wallet" : msg, "warn");
@@ -466,6 +487,7 @@
     if (e.target.id === "wallet-modal") closeWalletModal();
   });
   document.getElementById("claim-btn").addEventListener("click", claimOink);
+  document.getElementById("add-oink-btn").addEventListener("click", addOinkToWallet);
 
   provider = new ethers.JsonRpcProvider(RPC_URL);
 </script>
