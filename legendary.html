@@ -26,10 +26,16 @@
     .nav { display:flex; justify-content:space-between; align-items:center; gap:12px; }
     .logo { font-size:11px; letter-spacing:1px; text-decoration:none; color:var(--text); }
     .logo:hover { color:var(--rh-green); }
-    .nav-links { display:flex; gap:14px; font-size:7px; }
-    .nav-links a { color:var(--muted); text-decoration:none; }
-    .nav-links a:hover, .nav-links a.active { color:var(--rh-green); }
-    .nav-links a[href="oink.html"]:hover { color:var(--pig); }
+    .nav-links { display:flex; gap:8px; font-size:7px; flex-wrap:wrap; }
+    .nav-links a {
+      color:var(--text); text-decoration:none; cursor:pointer;
+      border:2px solid var(--border); padding:6px 10px;
+      transition:border-color .15s, color .15s, background .15s;
+    }
+    .nav-links a:hover { border-color:var(--rh-green); color:var(--rh-green); }
+    .nav-links a.active { border-color:var(--rh-green); color:var(--rh-green); background:rgba(204,255,0,0.08); }
+    .nav-links a[href="oink.html"] { color:var(--pig); border-color:rgba(255,188,148,0.45); }
+    .nav-links a[href="oink.html"]:hover, .nav-links a[href="oink.html"].active { color:var(--pig); border-color:var(--pig); background:rgba(255,188,148,0.08); }
 
     .hero { text-align:center; padding:28px 0 20px; }
     .hero h1 { font-size:clamp(14px,3vw,22px); margin:0 0 10px; letter-spacing:2px; color:var(--gold); text-shadow:2px 2px 0 var(--rh-green-dim); }
@@ -100,7 +106,7 @@
       <a href="index.html">mint</a>
       <a href="legendary.html" class="active">legendary</a>
       <a href="stats.html">stats</a>
-      <a href="oink.html" style="color:var(--pig)">$oink</a>
+      <a href="oink.html">$oink</a>
       <a href="faq.html">faq</a>
     </div>
   </div>

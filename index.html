@@ -59,11 +59,18 @@
     .x-pixel { width:16px; height:16px; flex-shrink:0; image-rendering:pixelated; image-rendering:crisp-edges; }
     .x-handle { font-size:8px; }
     .brand-sub { font-size:8px; margin:8px 0 0; color:var(--muted); line-height:1.5; }
-    .explore-links { font-size:7px; margin:10px 0 0; }
-    .explore-links a { color:var(--muted); text-decoration:none; }
-    .explore-links a:hover { color:var(--rh-green); }
-    .explore-links a[href="oink.html"] { color:var(--pig); }
-    .explore-links a[href="oink.html"]:hover { color:var(--pig-dim); }
+    .explore-links {
+      font-size:7px; margin:12px 0 0; display:flex; gap:8px;
+      justify-content:center; flex-wrap:wrap;
+    }
+    .explore-links a {
+      color:var(--text); text-decoration:none; cursor:pointer;
+      border:2px solid var(--border); padding:6px 10px;
+      transition:border-color .15s, color .15s, background .15s;
+    }
+    .explore-links a:hover { border-color:var(--rh-green); color:var(--rh-green); }
+    .explore-links a[href="oink.html"] { color:var(--pig); border-color:rgba(255,188,148,0.45); }
+    .explore-links a[href="oink.html"]:hover { color:var(--pig); border-color:var(--pig); background:rgba(255,188,148,0.08); }
 
     .mint-section {
       background:var(--card); border:2px solid var(--rh-green); padding:clamp(14px,2.5vw,22px);
@@ -184,7 +191,7 @@
         <span class="x-handle">@HoodPixelPigs</span>
       </a>
       <p class="brand-sub" id="hero-subtitle">Robinhood Chain • $1 in ETH</p>
-      <p class="explore-links"><a href="legendary.html">legendary</a> · <a href="stats.html">stats</a> · <a href="faq.html">faq</a></p>
+      <p class="explore-links"><a href="legendary.html">legendary</a><a href="stats.html">stats</a><a href="faq.html">faq</a></p>
     </section>
 
     <section class="mint-section">

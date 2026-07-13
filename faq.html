@@ -24,10 +24,16 @@
     .nav { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
     .logo { font-size:11px; text-decoration:none; color:var(--text); }
     .logo:hover { color:var(--rh-green); }
-    .nav-links { display:flex; gap:12px; font-size:7px; flex-wrap:wrap; }
-    .nav-links a { color:var(--muted); text-decoration:none; }
-    .nav-links a:hover, .nav-links a.active { color:var(--rh-green); }
-    .nav-links a[href="oink.html"] { color:var(--pig); }
+    .nav-links { display:flex; gap:8px; font-size:7px; flex-wrap:wrap; }
+    .nav-links a {
+      color:var(--text); text-decoration:none; cursor:pointer;
+      border:2px solid var(--border); padding:6px 10px;
+      transition:border-color .15s, color .15s, background .15s;
+    }
+    .nav-links a:hover { border-color:var(--rh-green); color:var(--rh-green); }
+    .nav-links a.active { border-color:var(--rh-green); color:var(--rh-green); background:rgba(204,255,0,0.08); }
+    .nav-links a[href="oink.html"] { color:var(--pig); border-color:rgba(255,188,148,0.45); }
+    .nav-links a[href="oink.html"]:hover, .nav-links a[href="oink.html"].active { color:var(--pig); border-color:var(--pig); background:rgba(255,188,148,0.08); }
 
     .hero { padding:24px 0 16px; }
     .hero h1 { font-size:clamp(12px,3vw,18px); margin:0 0 8px; letter-spacing:1px; }
