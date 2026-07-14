@@ -815,12 +815,14 @@
     const left = Math.max(0, MAX_PER_WALLET - userMinted);
     const el = document.getElementById("user-limit");
     if (!userAddress) {
-      el.textContent = `Max ${MAX_PER_WALLET} per wallet`;
+      el.textContent = "";
+      el.hidden = true;
       return;
     }
+    el.hidden = false;
     el.textContent = left > 0
-      ? `You can mint ${left} more (max ${MAX_PER_WALLET} per wallet)`
-      : `Wallet limit reached (${MAX_PER_WALLET} max)`;
+      ? `You can mint ${left} more`
+      : "Wallet limit reached";
   }
 
   async function refreshSupply() {
