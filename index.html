@@ -80,11 +80,10 @@
     .mint-head h2 { margin:0; font-size:11px; letter-spacing:1px; }
     .mint-meta { font-size:7px; color:var(--muted); line-height:1.6; text-align:right; }
     .mint-stats { display:flex; justify-content:space-between; align-items:center; gap:8px; font-size:8px; margin-bottom:8px; flex-wrap:wrap; }
-    .price-row { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin:8px 0; flex-wrap:wrap; }
+    .price-row { margin:8px 0; }
     .price { font-size:clamp(14px,2.2vw,20px); color:var(--rh-green); margin:0; line-height:1.3; }
     .price small { display:block; font-size:7px; color:var(--muted); margin-top:4px; }
-    .cost { font-size:8px; margin:0; text-align:right; line-height:1.6; }
-    .cost .eth { color:var(--rh-green); font-size:10px; display:block; }
+    #qty-total { color:var(--rh-green); }
 
     .controls { display:flex; gap:10px; align-items:center; margin:10px 0; }
     .qty { display:flex; align-items:center; gap:6px; }
@@ -202,15 +201,11 @@
 
       <div class="mint-stats">
         <span class="accent" id="remaining-display">Left <span id="remaining">3333</span></span>
-        <span class="muted" id="user-limit">Max 11 per wallet</span>
+        <span class="muted" id="user-limit" hidden></span>
       </div>
 
       <div class="price-row">
         <div class="price" id="price-display">$1 USD <small>live ETH price</small></div>
-        <div class="cost">
-          <span class="eth" id="total-eth">≈ 0.00 ETH</span>
-          <span id="total-usd">≈ $1.00 USD</span>
-        </div>
       </div>
       <div class="muted" id="price-sync" style="display:none;font-size:7px;margin-bottom:6px;"></div>
 
@@ -220,7 +215,7 @@
           <span id="quantity">1</span>
           <button type="button" onclick="changeQty(1)">+</button>
         </div>
-        <div class="qty-label">MINT <span id="qty-text">1</span> PIG<span id="s-text"></span></div>
+        <div class="qty-label">MINT <span id="qty-text">1</span> PIG<span id="s-text"></span><span id="qty-total"></span></div>
       </div>
 
       <div class="btn-row">
@@ -912,19 +907,22 @@
   function updateTotal() {
     const perPigEth = perPigEthAmount();
     const totalEth = perPigEth * quantity;
+    const totalEl = document.getElementById("qty-total");
 
-    document.getElementById("total-eth").textContent = `≈ ${formatEthAmount(totalEth)} ETH`;
-    if (ethPriceUsd > 0 && totalEth > 0) {
-      document.getElementById("total-usd").textContent =
-        `≈ $${(totalEth * ethPriceUsd).toFixed(2)} USD`;
-    } else if (!TESTNET_MODE) {
-      document.getElementById("total-usd").textContent =
-        `≈ $${(MINT_USD * quantity).toFixed(2)} USD`;
-    } else {
-      document.getElementById("total-usd").textContent = `≈ $${quantity.toFixed(2)} USD`;
-    }
     document.getElementById("qty-text").textContent = quantity;
     document.getElementById("s-text").textContent = quantity > 1 ? "S" : "";
+
+    if (quantity > 1 && totalEth > 0) {
+      let usd = "";
+      if (ethPriceUsd > 0) {
+        usd = ` ($${(totalEth * ethPriceUsd).toFixed(2)})`;
+      } else if (!TESTNET_MODE) {
+        usd = ` ($${(MINT_USD * quantity).toFixed(2)})`;
+      }
+      totalEl.textContent = ` · ≈ ${formatEthAmount(totalEth)} ETH${usd}`;
+    } else {
+      totalEl.textContent = "";
+    }
   }
 
   function maxMintable() {
