@@ -181,7 +181,7 @@
 
 <header class="hero container">
   <h1>PIG YARD</h1>
-  <p>OINK trades are free · ETH buys pay +5% · ETH sellers pay 5%</p>
+  <p>OINK trades are free · ETH pays +3% buy / 3% sell fee</p>
 </header>
 
 <div class="container yard-stats" id="yard-stats">
@@ -190,9 +190,14 @@
   <span>floor ETH <strong id="stat-floor-eth">—</strong></span>
 </div>
 
+<div class="container" id="mintout-banner" hidden>
+  <div class="deploy-banner" style="border-color:var(--rh-green);color:var(--rh-green);background:#0a1200">
+    Pig Yard opens <strong>after mint-out</strong> when OINK has liquidity. Deploy <code>PigYard.sol</code> now — trading goes live on the site then.
+  </div>
+</div>
 <div class="container" id="deploy-banner" hidden>
   <div class="deploy-banner">
-    Pig Yard contract not linked yet. Deploy <code>PigYard.sol</code> and set <code>PIG_YARD_ADDRESS</code> in this page.
+    Pig Yard contract not linked yet. Set <code>PIG_YARD_ADDRESS</code> in this page after Remix deploy.
   </div>
 </div>
 
@@ -218,7 +223,7 @@
     </div>
     <button type="button" class="btn" id="list-btn" disabled>LIST PIG</button>
     <button type="button" class="btn btn-secondary" id="cancel-btn" disabled>CANCEL MY LISTING</button>
-    <p style="font-size:6px;color:var(--muted);line-height:1.6;margin:10px 0 0">OINK = zero fees. ETH listings cost buyers + sellers 5% each.</p>
+    <p style="font-size:6px;color:var(--muted);line-height:1.6;margin:10px 0 0">OINK = zero fees. ETH = 3% buyer + 3% seller. Yard opens after mint-out.</p>
     <div class="status muted" id="list-status">connect on robinhood chain</div>
   </aside>
 
@@ -258,6 +263,7 @@
   const PIGS_ABI = [
     "function ownerOf(uint256) view returns (address)",
     "function totalSupply() view returns (uint256)",
+    "function remainingSupply() view returns (uint256)",
     "function getApproved(uint256) view returns (address)",
     "function isApprovedForAll(address,address) view returns (bool)",
     "function setApprovalForAll(address,bool)",
@@ -275,15 +281,21 @@
     "function getListing(uint256 tokenId) view returns (address seller, uint256 price, uint8 payWith, bool active)",
     "function ETH_BUYER_FEE_BPS() view returns (uint256)",
     "function ETH_SELLER_FEE_BPS() view returns (uint256)",
-    "function quoteEthBuy(uint256 price) view returns (uint256 totalDue, uint256 totalFee)",
+    "function quoteEthBuy(uint256 price) view returns (uint256 totalDue, uint256 totalFee, uint256 toSeller)",
     "function oinkFeeBps() view returns (uint256)"
   ];
 
   const PayWith = { OINK: 0, ETH: 1 };
 
+  const MAX_SUPPLY = 3333;
+
   let walletProvider = null;
   let provider, signer, userAddress;
   let totalSupply = 3333;
+  let remaining = MAX_SUPPLY;
+  let mintedOut = false;
+  let yardTradingOpen = false;
+  let ethBuyerFeeBps = 300n;
   let activeListings = [];
 
   const eip6963Providers = [];
@@ -336,10 +348,49 @@
 
   function priceLabel(price, payWith) {
     if (payWith === PayWith.ETH) {
-      const buyerFee = (price * 500n) / 10000n;
+      const buyerFee = (price * ethBuyerFeeBps) / 10000n;
       return `${formatEth(price)} + ${formatEth(buyerFee)} fee`;
     }
     return formatOink(price);
+  }
+
+  function updateYardGate() {
+    yardTradingOpen = YARD_LIVE && mintedOut;
+    document.getElementById("mintout-banner").hidden = mintedOut;
+    document.getElementById("deploy-banner").hidden = YARD_LIVE;
+    if (!yardTradingOpen) {
+      enableListForm(false);
+      if (!mintedOut) {
+        setListStatus("yard opens after mint-out + OINK liquidity", "muted");
+      } else if (!YARD_LIVE) {
+        setListStatus("awaiting pig yard contract link", "muted");
+      }
+    } else if (userAddress) {
+      enableListForm(true);
+      setListStatus("pick a pig and set price", "accent");
+    }
+  }
+
+  async function refreshMintStatus() {
+    try {
+      const pigs = new ethers.Contract(PIGS_ADDRESS, PIGS_ABI, provider);
+      const [minted, rem] = await Promise.all([
+        pigs.totalSupply(),
+        pigs.remainingSupply(),
+      ]);
+      totalSupply = Number(minted);
+      remaining = Number(rem);
+      mintedOut = remaining === 0 && totalSupply >= MAX_SUPPLY;
+    } catch (_) {
+      mintedOut = false;
+    }
+    if (YARD_LIVE) {
+      try {
+        const yard = new ethers.Contract(PIG_YARD_ADDRESS, YARD_ABI, provider);
+        ethBuyerFeeBps = BigInt(await yard.ETH_BUYER_FEE_BPS());
+      } catch (_) {}
+    }
+    updateYardGate();
   }
 
   function providerLabel(p) {
@@ -416,8 +467,7 @@
       document.getElementById("wallet-btn").textContent = shortAddr(userAddress);
       document.getElementById("wallet-btn").classList.add("is-connected");
       await refreshOwnedPigs();
-      setListStatus("pick a pig and set price", "accent");
-      enableListForm(true);
+      updateYardGate();
     } catch (err) {
       const msg = err?.message || String(err);
       setListStatus(/user rejected|denied/i.test(msg) ? "cancelled" : msg, "warn");
@@ -425,11 +475,12 @@
   }
 
   function enableListForm(on) {
-    document.getElementById("list-pig").disabled = !on || !YARD_LIVE;
-    document.getElementById("list-price").disabled = !on || !YARD_LIVE;
-    document.getElementById("list-pay").disabled = !on || !YARD_LIVE;
-    document.getElementById("list-btn").disabled = !on || !YARD_LIVE;
-    document.getElementById("cancel-btn").disabled = !on || !YARD_LIVE;
+    const ok = on && yardTradingOpen;
+    document.getElementById("list-pig").disabled = !ok;
+    document.getElementById("list-price").disabled = !ok;
+    document.getElementById("list-pay").disabled = !ok;
+    document.getElementById("list-btn").disabled = !ok;
+    document.getElementById("cancel-btn").disabled = !ok;
   }
 
   async function refreshOwnedPigs() {
@@ -518,9 +569,11 @@
       const isOink = l.payWith === PayWith.OINK;
       const isMine = userAddress && l.seller.toLowerCase() === userAddress.toLowerCase();
       const badge = isOink ? '<span class="pay-badge oink">OINK</span>' : '<span class="pay-badge eth">ETH</span>';
-      const btn = isMine
-        ? '<button type="button" class="btn btn-secondary" disabled>your listing</button>'
-        : `<button type="button" class="btn" data-buy="${l.id}">BUY</button>`;
+      const btn = !yardTradingOpen
+        ? '<button type="button" class="btn btn-secondary" disabled>after mint-out</button>'
+        : isMine
+          ? '<button type="button" class="btn btn-secondary" disabled>your listing</button>'
+          : `<button type="button" class="btn" data-buy="${l.id}">BUY</button>`;
       return `
         <article class="card">
           <div class="card-img-wrap">
@@ -560,7 +613,7 @@
   }
 
   async function listPig() {
-    if (!signer || !YARD_LIVE) return;
+    if (!signer || !yardTradingOpen) return;
     const tokenId = Number(document.getElementById("list-pig").value);
     const payWith = Number(document.getElementById("list-pay").value);
     const price = parseListPrice(document.getElementById("list-price").value, payWith);
@@ -587,7 +640,7 @@
   }
 
   async function cancelListing() {
-    if (!signer || !YARD_LIVE) return;
+    if (!signer || !yardTradingOpen) return;
     const tokenId = Number(document.getElementById("list-pig").value);
     if (!tokenId) { setListStatus("select your listed pig", "warn"); return; }
     const btn = document.getElementById("cancel-btn");
@@ -612,7 +665,7 @@
       await openWalletModal();
       return;
     }
-    if (!YARD_LIVE) return;
+    if (!yardTradingOpen) return;
     const listing = activeListings.find((l) => l.id === tokenId);
     if (!listing) return;
 
@@ -644,9 +697,8 @@
       walletProvider = null;
       document.getElementById("wallet-btn").textContent = "CONNECT";
       document.getElementById("wallet-btn").classList.remove("is-connected");
-      enableListForm(false);
       document.getElementById("list-pig").innerHTML = '<option value="">connect wallet</option>';
-      setListStatus("connect on robinhood chain");
+      updateYardGate();
       renderGrid();
       return;
     }
@@ -664,14 +716,9 @@
     input.placeholder = payWith === PayWith.ETH ? "e.g. 0.05" : "e.g. 50000";
   });
 
-  if (!YARD_LIVE) {
-    document.getElementById("deploy-banner").hidden = false;
-    enableListForm(false);
-  }
-
   provider = new ethers.JsonRpcProvider(RPC_URL);
-  loadListings();
-  setInterval(loadListings, 45000);
+  refreshMintStatus().then(loadListings);
+  setInterval(() => { refreshMintStatus().then(loadListings); }, 45000);
 </script>
 </body>
 </html>
