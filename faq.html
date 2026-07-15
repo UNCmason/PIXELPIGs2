@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PIXELPIGS • FAQ</title>
-  <meta name="description" content="PixelPigs FAQ — Robinhood Chain, minting, and $OINK.">
+  <meta name="description" content="PixelPigs FAQ — Robinhood Chain, Pig Yard, minting, and $OINK.">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap">
   <style>
     :root {
@@ -13,13 +13,14 @@
       --rh-green:#CCFF00; --rh-green-dim:#A3CC00;
       --muted:#6b6b6b; --border:#1e1e1e; --text:#ffffff;
     }
+    *, *::before, *::after { box-sizing:border-box; }
     html, body { margin:0; min-height:100%; }
     body {
       background:var(--bg); color:var(--text);
       font-family:"Press Start 2P", system-ui, sans-serif; font-size:10px;
       line-height:1.7;
     }
-    .container { max-width:640px; margin:0 auto; padding:0 20px 40px; }
+    .container { max-width:600px; margin:0 auto; padding:0 20px 48px; }
     nav { border-bottom:2px solid var(--rh-green); padding:12px 0; }
     .nav { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
     .logo { font-size:11px; text-decoration:none; color:var(--text); }
@@ -33,28 +34,74 @@
     .nav-links a:hover { border-color:var(--rh-green); color:var(--rh-green); }
     .nav-links a.active { border-color:var(--rh-green); color:var(--rh-green); background:rgba(204,255,0,0.08); }
     .nav-links a[href="oink.html"] { color:var(--pig); border-color:rgba(255,188,148,0.45); }
-    .nav-links a[href="oink.html"]:hover, .nav-links a[href="oink.html"].active { color:var(--pig); border-color:var(--pig); background:rgba(255,188,148,0.08); }
+    .nav-links a[href="oink.html"]:hover { color:var(--pig); border-color:var(--pig); background:rgba(255,188,148,0.08); }
 
-    .hero { padding:24px 0 16px; }
-    .hero h1 { font-size:clamp(12px,3vw,18px); margin:0 0 8px; letter-spacing:1px; }
-    .hero p { font-size:7px; color:var(--muted); margin:0; }
+    .hero { padding:28px 0 20px; text-align:center; }
+    .hero h1 { font-size:clamp(12px,3vw,18px); margin:0 0 8px; letter-spacing:2px; }
+    .hero p { font-size:7px; color:var(--muted); margin:0; max-width:420px; margin-inline:auto; line-height:1.8; }
 
-    .faq-panel {
-      background:var(--card); border:2px solid var(--rh-green); padding:16px;
+    .faq-wrap {
+      background:var(--card);
+      border:2px solid var(--rh-green);
     }
-    .faq-item { border-bottom:1px solid var(--border); padding:14px 0; }
-    .faq-item:last-child { border-bottom:none; padding-bottom:0; }
-    .faq-item h2 { font-size:8px; color:var(--rh-green); margin:0 0 8px; line-height:1.6; }
-    .faq-item p, .faq-item ul { font-size:7px; color:var(--muted); margin:0 0 8px; line-height:1.8; }
-    .faq-item p:last-child, .faq-item ul:last-child { margin-bottom:0; }
-    .faq-item ul { padding-left:16px; }
-    .faq-item li { margin:4px 0; }
-    .faq-item a { color:var(--rh-green); text-decoration:none; }
-    .faq-item a:hover { text-decoration:underline; }
-    .faq-item .pig { color:var(--pig); }
 
-    .footer { text-align:center; padding:20px 0 0; font-size:7px; }
-    .footer a { color:var(--muted); text-decoration:none; margin:0 6px; }
+    .acc {
+      border-bottom:1px solid var(--border);
+    }
+    .acc:last-child { border-bottom:none; }
+
+    .acc-trigger {
+      width:100%; display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:14px 16px; background:transparent; border:none;
+      font-family:inherit; font-size:8px; color:var(--text);
+      text-align:left; cursor:pointer; line-height:1.6;
+      transition:color .15s, background .15s;
+    }
+    .acc-trigger:hover { color:var(--rh-green); background:rgba(204,255,0,0.04); }
+    .acc.is-open .acc-trigger { color:var(--rh-green); background:rgba(204,255,0,0.06); }
+
+    .acc-icon {
+      flex-shrink:0; width:14px; font-size:10px; color:var(--rh-green);
+      text-align:center; transition:transform .2s;
+    }
+    .acc.is-open .acc-icon { transform:rotate(45deg); }
+
+    .acc-panel {
+      display:grid; grid-template-rows:0fr;
+      transition:grid-template-rows .22s ease;
+    }
+    .acc.is-open .acc-panel { grid-template-rows:1fr; }
+
+    .acc-inner {
+      overflow:hidden;
+      padding:0 16px;
+    }
+    .acc.is-open .acc-inner { padding:0 16px 16px; }
+
+    .acc-body {
+      font-size:7px; color:var(--muted); line-height:1.85;
+    }
+    .acc-body p { margin:0 0 10px; }
+    .acc-body p:last-child { margin-bottom:0; }
+    .acc-body ul { margin:0 0 10px; padding-left:16px; }
+    .acc-body li { margin:5px 0; }
+    .acc-body a { color:var(--rh-green); text-decoration:none; }
+    .acc-body a:hover { text-decoration:underline; }
+    .acc-body .pig { color:var(--pig); }
+    .acc-body strong { color:var(--text); font-weight:normal; }
+
+    .tag-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+    .tag {
+      font-size:6px; padding:4px 8px; border:1px solid var(--border);
+      color:var(--muted);
+    }
+    .tag.oink { border-color:var(--pig); color:var(--pig); }
+
+    .footer {
+      text-align:center; padding:24px 0 0; font-size:7px;
+      display:flex; flex-wrap:wrap; justify-content:center; gap:8px 14px;
+    }
+    .footer a { color:var(--muted); text-decoration:none; }
     .footer a:hover { color:var(--rh-green); }
   </style>
 </head>
@@ -76,81 +123,174 @@
 
 <header class="container hero">
   <h1>FAQ</h1>
-  <p>Robinhood Chain · pigs · $OINK</p>
+  <p>Answers about minting, $OINK, and the Pig Yard on Robinhood Chain.</p>
 </header>
 
-<main class="container faq-panel">
+<main class="container faq-wrap" id="faq-accordion">
 
-  <section class="faq-item">
-    <h2>What are PixelPigs?</h2>
-    <p>3,333 pixel-art pigs on <strong>Robinhood Chain</strong>. Pure code — no AI. Each pig is an ERC-721 NFT you can hold and trade on <a href="https://opensea.io/collection/hoodpixelpigs" target="_blank" rel="noopener">OpenSea</a>.</p>
-    <p>Mint at <a href="index.html">hoodpixelpigs.xyz</a> · max <strong>11 pigs per wallet</strong> · price targets <strong>~$1 USD</strong> in ETH (set on-chain).</p>
-  </section>
+  <div class="acc">
+    <button type="button" class="acc-trigger" aria-expanded="false">
+      <span>What are PixelPigs?</span>
+      <span class="acc-icon" aria-hidden="true">+</span>
+    </button>
+    <div class="acc-panel" role="region">
+      <div class="acc-inner">
+        <div class="acc-body">
+          <p>3,333 pixel-art pigs on <strong>Robinhood Chain</strong>. Pure code — no AI. Each pig is an ERC-721 NFT you can hold and trade on <a href="https://opensea.io/collection/hoodpixelpigs" target="_blank" rel="noopener">OpenSea</a>.</p>
+          <p>Mint at <a href="index.html">hoodpixelpigs.xyz</a> · max <strong>11 per wallet</strong> · price targets <strong>~$1 USD</strong> in ETH (set on-chain).</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <section class="faq-item">
-    <h2>How do I add Robinhood Chain to MetaMask?</h2>
-    <ul>
-      <li>Open MetaMask → network dropdown → <strong>Add network</strong></li>
-      <li>Or tap <strong>ADD ROBINHOOD CHAIN</strong> on the <a href="index.html">mint page</a></li>
-    </ul>
-    <p>Use these settings:</p>
-    <ul>
-      <li><strong>Network name:</strong> Robinhood Chain</li>
-      <li><strong>RPC URL:</strong> https://rpc.mainnet.chain.robinhood.com</li>
-      <li><strong>Chain ID:</strong> 4663</li>
-      <li><strong>Currency:</strong> ETH</li>
-      <li><strong>Explorer:</strong> https://robinhoodchain.blockscout.com</li>
-    </ul>
-    <p>You need a small amount of <strong>ETH on Robinhood Chain</strong> for mint gas + mint price. Bridge ETH to chain 4663 before minting.</p>
-  </section>
+  <div class="acc">
+    <button type="button" class="acc-trigger" aria-expanded="false">
+      <span>What is the Pig Yard?</span>
+      <span class="acc-icon" aria-hidden="true">+</span>
+    </button>
+    <div class="acc-panel" role="region">
+      <div class="acc-inner">
+        <div class="acc-body">
+          <p>The <strong>Pig Yard</strong> is the official PixelPigs marketplace on <a href="market.html">hoodpixelpigs.xyz</a> — trade pigs in-house without leaving the site. OpenSea remains available for wider discovery.</p>
+          <p>List your pig for <span class="pig">OINK</span> or ETH. <strong>OINK trades have zero fees</strong> for buyers and sellers. ETH listings carry a <strong>3% buyer</strong> and <strong>3% seller</strong> fee to encourage using OINK.</p>
+          <p>Trading opens <strong>after mint-out</strong>, when OINK has liquidity. The contract is deployed and linked — the site enables buy/sell automatically once all 3,333 pigs are minted.</p>
+          <p>Contract: <a href="https://robinhoodchain.blockscout.com/address/0x81b101Ea49d5e6315126E0Dac97e012C9E1a65cB" target="_blank" rel="noopener">0x81b1…65cB</a></p>
+          <div class="tag-row">
+            <span class="tag oink">OINK = free</span>
+            <span class="tag">ETH = 3% each side</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <section class="faq-item">
-    <h2>Which wallet can I use?</h2>
-    <p>Any EVM wallet on chain 4663: MetaMask, OKX, Rabby, Robinhood Wallet, etc. On mint and <a href="oink.html">$OINK</a> pages, tap <strong>CONNECT</strong> and pick your wallet from the list.</p>
-  </section>
+  <div class="acc">
+    <button type="button" class="acc-trigger" aria-expanded="false">
+      <span>What is $OINK?</span>
+      <span class="acc-icon" aria-hidden="true">+</span>
+    </button>
+    <div class="acc-panel" role="region">
+      <div class="acc-inner">
+        <div class="acc-body">
+          <p><span class="pig">$OINK</span> is the PixelPigs community token on Robinhood Chain. Fixed supply: <strong>335,700,000 OINK</strong>. DEX trading opens <strong>after mint-out</strong>.</p>
+          <p>Use OINK on the Pig Yard for fee-free pig trades. Claim OINK from pigs you hold on the <a href="oink.html">$OINK page</a>.</p>
+          <p>Token: <a href="https://robinhoodchain.blockscout.com/address/0xF2c5F81F291E80BFC59e66E6D027C23471ED745b" target="_blank" rel="noopener">0xF2c5…745b</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <section class="faq-item">
-    <h2>What is $OINK?</h2>
-    <p><span class="pig">$OINK</span> is the PixelPigs community token on Robinhood Chain. Fixed supply: <strong>335,700,000 OINK</strong>. Trading opens <strong>after mint out</strong> (all 3,333 pigs minted).</p>
-    <p>Token: <a href="https://robinhoodchain.blockscout.com/address/0xF2c5F81F291E80BFC59e66E6D027C23471ED745b" target="_blank" rel="noopener">0xF2c5…745b</a></p>
-  </section>
+  <div class="acc">
+    <button type="button" class="acc-trigger" aria-expanded="false">
+      <span>How do I add Robinhood Chain?</span>
+      <span class="acc-icon" aria-hidden="true">+</span>
+    </button>
+    <div class="acc-panel" role="region">
+      <div class="acc-inner">
+        <div class="acc-body">
+          <ul>
+            <li>MetaMask → network dropdown → <strong>Add network</strong></li>
+            <li>Or tap <strong>ADD ROBINHOOD CHAIN</strong> on the <a href="index.html">mint page</a></li>
+          </ul>
+          <p><strong>Network name:</strong> Robinhood Chain<br>
+          <strong>RPC:</strong> https://rpc.mainnet.chain.robinhood.com<br>
+          <strong>Chain ID:</strong> 4663 · <strong>Currency:</strong> ETH<br>
+          <strong>Explorer:</strong> https://robinhoodchain.blockscout.com</p>
+          <p>Bridge a small amount of <strong>ETH on chain 4663</strong> before minting (gas + mint price).</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <section class="faq-item">
-    <h2>Are pigs transferable?</h2>
-    <p><strong>Yes.</strong> PixelPigs are full ERC-721 NFTs — trade, send, list on OpenSea anytime.</p>
-  </section>
+  <div class="acc">
+    <button type="button" class="acc-trigger" aria-expanded="false">
+      <span>Which wallet can I use?</span>
+      <span class="acc-icon" aria-hidden="true">+</span>
+    </button>
+    <div class="acc-panel" role="region">
+      <div class="acc-inner">
+        <div class="acc-body">
+          <p>Any EVM wallet on chain 4663: MetaMask, OKX, Rabby, Robinhood Wallet, and others. On mint, <a href="oink.html">$OINK</a>, and <a href="market.html">Pig Yard</a> pages, tap <strong>CONNECT</strong> and pick your wallet.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <section class="faq-item">
-    <h2>Why does mint price show more or less than $1?</h2>
-    <p>Mint price is set in <strong>ETH on-chain</strong>. The site converts live ETH/USD so it targets ~$1. When ETH moves, the dollar estimate can drift — refresh the mint page to see the current USD equivalent.</p>
-  </section>
+  <div class="acc">
+    <button type="button" class="acc-trigger" aria-expanded="false">
+      <span>Are pigs transferable?</span>
+      <span class="acc-icon" aria-hidden="true">+</span>
+    </button>
+    <div class="acc-panel" role="region">
+      <div class="acc-inner">
+        <div class="acc-body">
+          <p><strong>Yes.</strong> PixelPigs are standard ERC-721 NFTs. Send, list on OpenSea, or trade on the <a href="market.html">Pig Yard</a> anytime.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <section class="faq-item">
-    <h2>Contract addresses</h2>
-    <ul>
-      <li><strong>PixelPigs NFT:</strong> <a href="https://robinhoodchain.blockscout.com/address/0xc51e0a920133D1491Db4ee4BA461e0BE77B4b3b8" target="_blank" rel="noopener">0xc51e…b3b8</a></li>
-      <li><strong>$OINK token:</strong> <a href="https://robinhoodchain.blockscout.com/address/0xF2c5F81F291E80BFC59e66E6D027C23471ED745b" target="_blank" rel="noopener">0xF2c5…745b</a></li>
-      <li><strong>Pig Yard (marketplace):</strong> <a href="https://robinhoodchain.blockscout.com/address/0x81b101Ea49d5e6315126E0Dac97e012C9E1a65cB" target="_blank" rel="noopener">0x81b1…65cB</a> · <a href="market.html">trade on site</a></li>
-    </ul>
-  </section>
+  <div class="acc">
+    <button type="button" class="acc-trigger" aria-expanded="false">
+      <span>Why does mint price drift from $1?</span>
+      <span class="acc-icon" aria-hidden="true">+</span>
+    </button>
+    <div class="acc-panel" role="region">
+      <div class="acc-inner">
+        <div class="acc-body">
+          <p>Mint price is set in <strong>ETH on-chain</strong>. The site shows a live USD estimate targeting ~$1. When ETH moves, the dollar figure can shift — refresh the <a href="index.html">mint page</a> for the current amount.</p>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <section class="faq-item">
-    <h2>Quick links</h2>
-    <p>
-      <a href="index.html">Mint</a> ·
-      <a href="market.html">Pig Yard</a> ·
-      <a href="oink.html">$OINK</a> ·
-      <a href="legendary.html">Legendary board</a> ·
-      <a href="stats.html">Live stats</a> ·
-      <a href="https://x.com/HoodPixelPigs" target="_blank" rel="noopener">@HoodPixelPigs</a>
-    </p>
-  </section>
+  <div class="acc">
+    <button type="button" class="acc-trigger" aria-expanded="false">
+      <span>Contract addresses</span>
+      <span class="acc-icon" aria-hidden="true">+</span>
+    </button>
+    <div class="acc-panel" role="region">
+      <div class="acc-inner">
+        <div class="acc-body">
+          <ul>
+            <li><strong>PixelPigs NFT</strong> — <a href="https://robinhoodchain.blockscout.com/address/0xc51e0a920133D1491Db4ee4BA461e0BE77B4b3b8" target="_blank" rel="noopener">0xc51e…b3b8</a></li>
+            <li><strong>$OINK token</strong> — <a href="https://robinhoodchain.blockscout.com/address/0xF2c5F81F291E80BFC59e66E6D027C23471ED745b" target="_blank" rel="noopener">0xF2c5…745b</a></li>
+            <li><strong>Pig Yard</strong> — <a href="https://robinhoodchain.blockscout.com/address/0x81b101Ea49d5e6315126E0Dac97e012C9E1a65cB" target="_blank" rel="noopener">0x81b1…65cB</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
 
 </main>
 
-<div class="container footer">
-  <a href="index.html">← mint</a>
-</div>
+<footer class="container footer">
+  <a href="index.html">mint</a>
+  <a href="market.html">yard</a>
+  <a href="oink.html">$oink</a>
+  <a href="legendary.html">legendary</a>
+  <a href="stats.html">stats</a>
+  <a href="https://x.com/HoodPixelPigs" target="_blank" rel="noopener">@HoodPixelPigs</a>
+</footer>
 
+<script>
+  (function () {
+    const items = document.querySelectorAll("#faq-accordion .acc");
+    items.forEach((item) => {
+      const btn = item.querySelector(".acc-trigger");
+      btn.addEventListener("click", () => {
+        const open = item.classList.contains("is-open");
+        items.forEach((el) => {
+          el.classList.remove("is-open");
+          el.querySelector(".acc-trigger").setAttribute("aria-expanded", "false");
+        });
+        if (!open) {
+          item.classList.add("is-open");
+          btn.setAttribute("aria-expanded", "true");
+        }
+      });
+    });
+  })();
+</script>
 </body>
 </html>
