@@ -181,7 +181,7 @@
 
 <header class="hero container">
   <h1>PIG YARD</h1>
-  <p>Official PixelPigs market · pay with OINK or ETH · 2.5% fee</p>
+  <p>Buy with OINK — zero buyer fee · sellers pay 5% on OINK / 2.5% on ETH</p>
 </header>
 
 <div class="container yard-stats" id="yard-stats">
@@ -218,6 +218,7 @@
     </div>
     <button type="button" class="btn" id="list-btn" disabled>LIST PIG</button>
     <button type="button" class="btn btn-secondary" id="cancel-btn" disabled>CANCEL MY LISTING</button>
+    <p style="font-size:6px;color:var(--muted);line-height:1.6;margin:10px 0 0">Buyers pay list price only. Sell fee comes out of seller proceeds.</p>
     <div class="status muted" id="list-status">connect on robinhood chain</div>
   </aside>
 
@@ -272,7 +273,9 @@
     "function cancel(uint256 tokenId)",
     "function buy(uint256 tokenId) payable",
     "function getListing(uint256 tokenId) view returns (address seller, uint256 price, uint8 payWith, bool active)",
-    "function FEE_BPS() view returns (uint256)"
+    "function OINK_SELL_FEE_BPS() view returns (uint256)",
+    "function ETH_SELL_FEE_BPS() view returns (uint256)",
+    "function sellFeeBps(uint8 payWith) view returns (uint256)"
   ];
 
   const PayWith = { OINK: 0, ETH: 1 };
