@@ -878,7 +878,7 @@
       const usdNow = currentPriceEth * ethPriceUsd;
       el.textContent =
         `Mint price is ${formatEthAmount(currentPriceEth)} ETH (~$${usdNow.toFixed(2)}). ` +
-        `Target ~$${MINT_USD.toFixed(2)} — call setMintPrice from payment wallet.`;
+        `USD target ~$${MINT_USD.toFixed(2)} — on-chain price may update as ETH moves.`;
     } else {
       el.style.display = "none";
     }
