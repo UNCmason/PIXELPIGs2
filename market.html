@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PIXELPIGS • PIG YARD</title>
+  <meta name="description" content="Trade PixelPigs in-house — pay with OINK or ETH on Robinhood Chain.">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap">
+  <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+  <style>
+    :root {
+      --bg:#000000; --card:#121212;
+      --pig:#FFBC94; --pig-dim:#E8A070;
+      --rh-green:#CCFF00; --rh-green-dim:#A3CC00;
+      --muted:#6b6b6b; --border:#1e1e1e; --text:#ffffff;
+    }
+    * { box-sizing:border-box; }
+    html, body { margin:0; min-height:100%; }
+    body {
+      background:var(--bg); color:var(--text);
+      font-family:"Press Start 2P", system-ui, sans-serif; font-size:10px;
+      line-height:1.6;
+    }
+    .container { max-width:1100px; margin:0 auto; padding:0 20px; }
+    nav { border-bottom:2px solid var(--rh-green); padding:12px 0; }
+    .nav { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    .logo { font-size:11px; letter-spacing:1px; text-decoration:none; color:var(--text); }
+    .logo:hover { color:var(--rh-green); }
+    .nav-links { display:flex; gap:8px; font-size:7px; flex-wrap:wrap; }
+    .nav-links a {
+      color:var(--text); text-decoration:none; cursor:pointer;
+      border:2px solid var(--border); padding:6px 10px;
+      transition:border-color .15s, color .15s, background .15s;
+    }
+    .nav-links a:hover { border-color:var(--rh-green); color:var(--rh-green); }
+    .nav-links a.active { border-color:var(--rh-green); color:var(--rh-green); background:rgba(204,255,0,0.08); }
+    .nav-links a[href="oink.html"] { color:var(--pig); border-color:rgba(255,188,148,0.45); }
+    .nav-links a[href="oink.html"]:hover { color:var(--pig); border-color:var(--pig); background:rgba(255,188,148,0.08); }
+    .btn-wallet {
+      padding:7px 12px; font-size:8px; border:2px solid var(--rh-green);
+      background:var(--rh-green); color:#000; font-family:inherit; cursor:pointer;
+    }
+    .btn-wallet.is-connected { background:transparent; color:var(--rh-green); }
+
+    .hero { text-align:center; padding:24px 0 16px; }
+    .hero h1 { font-size:clamp(14px,3vw,22px); margin:0 0 8px; letter-spacing:2px; color:var(--pig); text-shadow:2px 2px 0 var(--pig-dim); }
+    .hero p { font-size:7px; color:var(--muted); margin:0; }
+
+    .yard-stats {
+      display:flex; justify-content:center; gap:16px; flex-wrap:wrap;
+      font-size:7px; margin-bottom:20px; color:var(--muted);
+    }
+    .yard-stats strong { color:var(--rh-green); }
+
+    .layout {
+      display:grid; grid-template-columns:minmax(0,280px) minmax(0,1fr);
+      gap:16px; padding-bottom:40px; align-items:start;
+    }
+
+    .panel {
+      background:var(--card); border:2px solid var(--pig);
+      padding:16px; position:sticky; top:12px;
+    }
+    .panel h2 { font-size:9px; margin:0 0 12px; color:var(--pig); }
+    .field { margin-bottom:10px; }
+    .field label { display:block; font-size:6px; color:var(--muted); margin-bottom:6px; }
+    .field select, .field input {
+      width:100%; background:var(--bg); border:2px solid var(--border);
+      color:var(--text); font-family:inherit; font-size:8px; padding:10px;
+    }
+    .field select:focus, .field input:focus { outline:none; border-color:var(--rh-green); }
+
+    .btn {
+      background:var(--pig); color:#000; border:none; padding:12px 14px;
+      font-family:inherit; font-size:9px; font-weight:bold; cursor:pointer; width:100%;
+    }
+    .btn:hover { background:var(--pig-dim); }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+    .btn-secondary {
+      margin-top:8px; background:transparent; color:var(--pig);
+      border:2px solid var(--pig); font-size:8px;
+    }
+    .btn-secondary:hover { background:rgba(255,188,148,0.12); }
+
+    .status {
+      margin-top:10px; padding:8px; background:var(--bg);
+      border:1px solid var(--border); font-size:6px; line-height:1.6; color:var(--muted);
+    }
+    .status.warn { color:#ffaa00; }
+    .status.accent { color:var(--pig); }
+
+    .deploy-banner {
+      background:#1a1400; border:2px solid #ffaa00; color:#ffaa00;
+      font-size:7px; padding:12px; margin-bottom:16px; text-align:center; line-height:1.7;
+    }
+
+    .grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
+      gap:12px;
+    }
+    .card {
+      background:var(--card); border:2px solid var(--border);
+      display:flex; flex-direction:column; transition:border-color .15s;
+    }
+    .card:hover { border-color:var(--rh-green); }
+    .card-img-wrap {
+      aspect-ratio:1; background:#0a0a0a; display:flex; align-items:center; justify-content:center;
+      border-bottom:2px solid var(--border);
+    }
+    .card-img {
+      width:100%; height:100%; object-fit:contain;
+      image-rendering:pixelated; image-rendering:crisp-edges;
+    }
+    .card-body { padding:10px; display:flex; flex-direction:column; gap:8px; flex:1; }
+    .card-id { font-size:8px; color:var(--text); }
+    .card-price { font-size:9px; color:var(--rh-green); line-height:1.5; }
+    .pay-badge {
+      display:inline-block; font-size:6px; padding:3px 6px; border:1px solid;
+    }
+    .pay-badge.oink { color:var(--pig); border-color:var(--pig); }
+    .pay-badge.eth { color:var(--rh-green); border-color:var(--rh-green); }
+    .card-seller { font-size:6px; color:var(--muted); }
+    .card .btn { font-size:8px; padding:10px; }
+
+    .empty {
+      grid-column:1 / -1; text-align:center; padding:40px 20px;
+      color:var(--muted); font-size:7px; border:2px dashed var(--border);
+    }
+
+    .wallet-modal {
+      display:none; position:fixed; inset:0; z-index:100;
+      background:rgba(0,0,0,0.85); align-items:center; justify-content:center; padding:20px;
+    }
+    .wallet-modal.open { display:flex; }
+    .wallet-sheet {
+      background:var(--card); border:2px solid var(--rh-green); padding:18px;
+      width:min(360px,100%); max-height:80vh; overflow-y:auto;
+    }
+    .wallet-sheet h3 { font-size:9px; margin:0 0 4px; color:var(--rh-green); }
+    .wallet-sheet p { font-size:7px; color:var(--muted); margin:0 0 12px; line-height:1.6; }
+    .wallet-opt {
+      display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+      background:var(--bg); border:2px solid var(--border); color:var(--text);
+      padding:10px 12px; margin-bottom:8px; cursor:pointer; font-family:inherit; font-size:8px;
+    }
+    .wallet-opt:hover { border-color:var(--rh-green); color:var(--rh-green); }
+    .wallet-close {
+      background:transparent; border:2px solid var(--border); color:var(--muted);
+      padding:8px 12px; width:100%; font-family:inherit; font-size:8px; cursor:pointer;
+    }
+
+    .footer-links {
+      text-align:center; padding:0 0 32px; font-size:7px;
+    }
+    .footer-links a { color:var(--muted); text-decoration:none; margin:0 8px; }
+    .footer-links a:hover { color:var(--rh-green); }
+
+    @media (max-width:800px) {
+      .layout { grid-template-columns:1fr; }
+      .panel { position:static; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav">
+    <a class="logo" href="index.html">PIXELPIGS</a>
+    <div class="nav-links">
+      <a href="index.html">mint</a>
+      <a href="market.html" class="active">yard</a>
+      <a href="legendary.html">legendary</a>
+      <a href="stats.html">stats</a>
+      <a href="oink.html">$oink</a>
+      <a href="faq.html">faq</a>
+    </div>
+    <button type="button" class="btn-wallet" id="wallet-btn">CONNECT</button>
+  </div>
+</nav>
+
+<header class="hero container">
+  <h1>PIG YARD</h1>
+  <p>Official PixelPigs market · pay with OINK or ETH · 2.5% fee</p>
+</header>
+
+<div class="container yard-stats" id="yard-stats">
+  <span>listed <strong id="stat-listed">—</strong></span>
+  <span>floor OINK <strong id="stat-floor-oink">—</strong></span>
+  <span>floor ETH <strong id="stat-floor-eth">—</strong></span>
+</div>
+
+<div class="container" id="deploy-banner" hidden>
+  <div class="deploy-banner">
+    Pig Yard contract not linked yet. Deploy <code>PigYard.sol</code> and set <code>PIG_YARD_ADDRESS</code> in this page.
+  </div>
+</div>
+
+<main class="container layout">
+  <aside class="panel">
+    <h2>LIST A PIG</h2>
+    <div class="field">
+      <label for="list-pig">your pig</label>
+      <select id="list-pig" disabled>
+        <option value="">connect wallet</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="list-price">price</label>
+      <input type="text" id="list-price" inputmode="decimal" placeholder="e.g. 50000" disabled>
+    </div>
+    <div class="field">
+      <label for="list-pay">accept payment in</label>
+      <select id="list-pay" disabled>
+        <option value="0" selected>OINK</option>
+        <option value="1">ETH</option>
+      </select>
+    </div>
+    <button type="button" class="btn" id="list-btn" disabled>LIST PIG</button>
+    <button type="button" class="btn btn-secondary" id="cancel-btn" disabled>CANCEL MY LISTING</button>
+    <div class="status muted" id="list-status">connect on robinhood chain</div>
+  </aside>
+
+  <section>
+    <div class="grid" id="listing-grid">
+      <div class="empty">loading listings…</div>
+    </div>
+  </section>
+</main>
+
+<p class="footer-links">
+  <a href="https://opensea.io/collection/hoodpixelpigs" target="_blank" rel="noopener">also on opensea ↗</a>
+</p>
+
+<div class="wallet-modal" id="wallet-modal" role="dialog" aria-label="Choose wallet">
+  <div class="wallet-sheet">
+    <h3>CONNECT WALLET</h3>
+    <p>Robinhood Chain (4663)</p>
+    <div id="wallet-options"></div>
+    <button type="button" class="wallet-close" id="wallet-close">cancel</button>
+  </div>
+</div>
+
+<script>
+  // Set after deploying PigYard.sol on Robinhood Chain
+  const PIG_YARD_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+  const PIGS_ADDRESS = "0xc51e0a920133D1491Db4ee4BA461e0BE77B4b3b8";
+  const OINK_ADDRESS = "0xF2c5F81F291E80BFC59e66E6D027C23471ED745b";
+  const RPC_URL = "https://rpc.mainnet.chain.robinhood.com";
+  const CHAIN_ID = 4663;
+  const EXPLORER = "https://robinhoodchain.blockscout.com";
+  const IMAGES_BASE = "https://pixelpigs.s3.filebase.io/images/";
+
+  const YARD_LIVE = PIG_YARD_ADDRESS !== "0x0000000000000000000000000000000000000000";
+
+  const PIGS_ABI = [
+    "function ownerOf(uint256) view returns (address)",
+    "function totalSupply() view returns (uint256)",
+    "function getApproved(uint256) view returns (address)",
+    "function isApprovedForAll(address,address) view returns (bool)",
+    "function setApprovalForAll(address,bool)",
+    "function approve(address,uint256)"
+  ];
+  const OINK_ABI = [
+    "function balanceOf(address) view returns (uint256)",
+    "function allowance(address,address) view returns (uint256)",
+    "function approve(address,uint256) returns (bool)"
+  ];
+  const YARD_ABI = [
+    "function list(uint256 tokenId, uint256 price, uint8 payWith)",
+    "function cancel(uint256 tokenId)",
+    "function buy(uint256 tokenId) payable",
+    "function getListing(uint256 tokenId) view returns (address seller, uint256 price, uint8 payWith, bool active)",
+    "function FEE_BPS() view returns (uint256)"
+  ];
+
+  const PayWith = { OINK: 0, ETH: 1 };
+
+  let walletProvider = null;
+  let provider, signer, userAddress;
+  let totalSupply = 3333;
+  let activeListings = [];
+
+  const eip6963Providers = [];
+  window.addEventListener("eip6963:announceProvider", (event) => {
+    if (!event.detail?.provider) return;
+    const exists = eip6963Providers.some(
+      (p) => p.info?.uuid === event.detail.info?.uuid || p.provider === event.detail.provider
+    );
+    if (!exists) eip6963Providers.push(event.detail);
+  });
+  window.dispatchEvent(new Event("eip6963:requestProvider"));
+
+  const ROBINHOOD_CHAIN = {
+    chainId: "0x1237",
+    chainName: "Robinhood Chain",
+    nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
+    rpcUrls: [RPC_URL],
+    blockExplorerUrls: [EXPLORER]
+  };
+
+  function shortAddr(a) {
+    return a ? `${a.slice(0, 6)}…${a.slice(-4)}` : "";
+  }
+
+  function setListStatus(msg, cls = "muted") {
+    const el = document.getElementById("list-status");
+    el.className = `status ${cls}`;
+    el.textContent = msg;
+  }
+
+  function formatOink(wei) {
+    const n = Number(ethers.formatEther(wei));
+    if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M OINK";
+    if (n >= 1_000) return (n / 1_000).toFixed(1) + "k OINK";
+    return n.toLocaleString("en-US", { maximumFractionDigits: 0 }) + " OINK";
+  }
+
+  function formatEth(wei) {
+    return Number(ethers.formatEther(wei)).toFixed(6).replace(/\.?0+$/, "") + " ETH";
+  }
+
+  function parseListPrice(raw, payWith) {
+    const s = String(raw).trim().replace(/,/g, "");
+    if (!s || isNaN(Number(s)) || Number(s) <= 0) return null;
+    if (payWith === PayWith.ETH) {
+      try { return ethers.parseEther(s); } catch { return null; }
+    }
+    try { return ethers.parseEther(s); } catch { return null; }
+  }
+
+  function priceLabel(price, payWith) {
+    return payWith === PayWith.ETH ? formatEth(price) : formatOink(price);
+  }
+
+  function providerLabel(p) {
+    if (p.isMetaMask) return "MetaMask";
+    if (p.isOkxWallet || p.isOKExWallet) return "OKX Wallet";
+    if (p.isRabby) return "Rabby";
+    return "Browser Wallet";
+  }
+
+  function collectWallets() {
+    const seen = new Set();
+    const list = [];
+    function add(provider, name) {
+      if (!provider || seen.has(provider)) return;
+      seen.add(provider);
+      list.push({ provider, name: name || "Wallet" });
+    }
+    for (const detail of eip6963Providers) add(detail.provider, detail.info?.name);
+    if (window.ethereum?.providers?.length) {
+      for (const p of window.ethereum.providers) add(p, providerLabel(p));
+    } else if (window.ethereum) {
+      add(window.ethereum, providerLabel(window.ethereum));
+    }
+    return list;
+  }
+
+  function closeWalletModal() {
+    document.getElementById("wallet-modal").classList.remove("open");
+  }
+
+  async function openWalletModal() {
+    window.dispatchEvent(new Event("eip6963:requestProvider"));
+    await new Promise((r) => setTimeout(r, 120));
+    const container = document.getElementById("wallet-options");
+    container.innerHTML = "";
+    const options = collectWallets();
+    if (!options.length) {
+      container.innerHTML = '<p style="font-size:7px;color:#ffaa00">No wallet found.</p>';
+    } else {
+      for (const opt of options) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "wallet-opt";
+        btn.textContent = opt.name;
+        btn.addEventListener("click", () => connectWithProvider(opt.provider));
+        container.appendChild(btn);
+      }
+    }
+    document.getElementById("wallet-modal").classList.add("open");
+  }
+
+  async function ensureChain(eth) {
+    const chain = await eth.request({ method: "eth_chainId" });
+    if (parseInt(chain, 16) !== CHAIN_ID) {
+      try {
+        await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ROBINHOOD_CHAIN.chainId }] });
+      } catch (e) {
+        if (e.code === 4902) {
+          await eth.request({ method: "wallet_addEthereumChain", params: [ROBINHOOD_CHAIN] });
+        } else throw e;
+      }
+    }
+  }
+
+  async function connectWithProvider(eth) {
+    closeWalletModal();
+    try {
+      await ensureChain(eth);
+      const accounts = await eth.request({ method: "eth_requestAccounts" });
+      walletProvider = eth;
+      provider = new ethers.BrowserProvider(eth);
+      signer = await provider.getSigner();
+      userAddress = accounts[0];
+      document.getElementById("wallet-btn").textContent = shortAddr(userAddress);
+      document.getElementById("wallet-btn").classList.add("is-connected");
+      await refreshOwnedPigs();
+      setListStatus("pick a pig and set price", "accent");
+      enableListForm(true);
+    } catch (err) {
+      const msg = err?.message || String(err);
+      setListStatus(/user rejected|denied/i.test(msg) ? "cancelled" : msg, "warn");
+    }
+  }
+
+  function enableListForm(on) {
+    document.getElementById("list-pig").disabled = !on || !YARD_LIVE;
+    document.getElementById("list-price").disabled = !on || !YARD_LIVE;
+    document.getElementById("list-pay").disabled = !on || !YARD_LIVE;
+    document.getElementById("list-btn").disabled = !on || !YARD_LIVE;
+    document.getElementById("cancel-btn").disabled = !on || !YARD_LIVE;
+  }
+
+  async function refreshOwnedPigs() {
+    const sel = document.getElementById("list-pig");
+    sel.innerHTML = "";
+    if (!userAddress) {
+      sel.innerHTML = '<option value="">connect wallet</option>';
+      return;
+    }
+    const pigs = new ethers.Contract(PIGS_ADDRESS, PIGS_ABI, provider);
+    const yard = new ethers.Contract(PIG_YARD_ADDRESS, YARD_ABI, provider);
+    const owned = [];
+    for (let id = 1; id <= totalSupply; id++) {
+      try {
+        const owner = await pigs.ownerOf(id);
+        if (owner.toLowerCase() !== userAddress.toLowerCase()) continue;
+        let tag = `#${id}`;
+        if (YARD_LIVE) {
+          const [, , , active] = await yard.getListing(id);
+          if (active) tag += " (listed)";
+        }
+        owned.push({ id, tag });
+      } catch (_) { /* not minted */ }
+    }
+    if (!owned.length) {
+      sel.innerHTML = '<option value="">no pigs in wallet</option>';
+      return;
+    }
+    sel.innerHTML = '<option value="">select pig</option>';
+    for (const p of owned) {
+      const opt = document.createElement("option");
+      opt.value = String(p.id);
+      opt.textContent = p.tag;
+      sel.appendChild(opt);
+    }
+  }
+
+  async function loadListings() {
+    const grid = document.getElementById("listing-grid");
+    if (!YARD_LIVE) {
+      grid.innerHTML = '<div class="empty">Pig Yard contract not deployed yet.</div>';
+      return;
+    }
+    grid.innerHTML = '<div class="empty">scanning listings…</div>';
+    const yard = new ethers.Contract(PIG_YARD_ADDRESS, YARD_ABI, provider);
+    const pigs = new ethers.Contract(PIGS_ADDRESS, PIGS_ABI, provider);
+    try {
+      totalSupply = Number(await pigs.totalSupply());
+    } catch (_) {}
+
+    const found = [];
+    for (let id = 1; id <= totalSupply; id++) {
+      try {
+        const [seller, price, payWith, active] = await yard.getListing(id);
+        if (!active) continue;
+        found.push({ id, seller, price, payWith: Number(payWith) });
+      } catch (_) {}
+    }
+    activeListings = found;
+    updateYardStats();
+    renderGrid();
+  }
+
+  function updateYardStats() {
+    document.getElementById("stat-listed").textContent = String(activeListings.length);
+    const oink = activeListings.filter((l) => l.payWith === PayWith.OINK).map((l) => l.price);
+    const eth = activeListings.filter((l) => l.payWith === PayWith.ETH).map((l) => l.price);
+    const min = (arr) => arr.length ? arr.reduce((a, b) => (a < b ? a : b)) : null;
+    const fo = min(oink);
+    const fe = min(eth);
+    document.getElementById("stat-floor-oink").textContent = fo != null ? formatOink(fo) : "—";
+    document.getElementById("stat-floor-eth").textContent = fe != null ? formatEth(fe) : "—";
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById("listing-grid");
+    if (!activeListings.length) {
+      grid.innerHTML = '<div class="empty">no pigs listed yet — be the first</div>';
+      return;
+    }
+    const sorted = [...activeListings].sort((a, b) => {
+      if (a.payWith !== b.payWith) return a.payWith - b.payWith;
+      return a.price < b.price ? -1 : a.price > b.price ? 1 : 0;
+    });
+    grid.innerHTML = sorted.map((l) => {
+      const isOink = l.payWith === PayWith.OINK;
+      const isMine = userAddress && l.seller.toLowerCase() === userAddress.toLowerCase();
+      const badge = isOink ? '<span class="pay-badge oink">OINK</span>' : '<span class="pay-badge eth">ETH</span>';
+      const btn = isMine
+        ? '<button type="button" class="btn btn-secondary" disabled>your listing</button>'
+        : `<button type="button" class="btn" data-buy="${l.id}">BUY</button>`;
+      return `
+        <article class="card">
+          <div class="card-img-wrap">
+            <img class="card-img" src="${IMAGES_BASE}${l.id}.png" alt="PixelPig #${l.id}" loading="lazy" width="200" height="200">
+          </div>
+          <div class="card-body">
+            <div class="card-id">PIG #${l.id} ${badge}</div>
+            <div class="card-price">${priceLabel(l.price, l.payWith)}</div>
+            <div class="card-seller">${shortAddr(l.seller)}</div>
+            ${btn}
+          </div>
+        </article>`;
+    }).join("");
+
+    grid.querySelectorAll("[data-buy]").forEach((btn) => {
+      btn.addEventListener("click", () => buyPig(Number(btn.dataset.buy)));
+    });
+  }
+
+  async function ensureNftApproval(tokenId) {
+    const pigs = new ethers.Contract(PIGS_ADDRESS, PIGS_ABI, signer);
+    const approved = await pigs.getApproved(tokenId);
+    const all = await pigs.isApprovedForAll(userAddress, PIG_YARD_ADDRESS);
+    if (approved.toLowerCase() === PIG_YARD_ADDRESS.toLowerCase() || all) return;
+    setListStatus("approve pig yard in wallet…", "muted");
+    const tx = await pigs.setApprovalForAll(PIG_YARD_ADDRESS, true);
+    await tx.wait();
+  }
+
+  async function ensureOinkApproval(amount) {
+    const oink = new ethers.Contract(OINK_ADDRESS, OINK_ABI, signer);
+    const allowance = await oink.allowance(userAddress, PIG_YARD_ADDRESS);
+    if (allowance >= amount) return;
+    setListStatus("approve OINK spend in wallet…", "muted");
+    const tx = await oink.approve(PIG_YARD_ADDRESS, ethers.MaxUint256);
+    await tx.wait();
+  }
+
+  async function listPig() {
+    if (!signer || !YARD_LIVE) return;
+    const tokenId = Number(document.getElementById("list-pig").value);
+    const payWith = Number(document.getElementById("list-pay").value);
+    const price = parseListPrice(document.getElementById("list-price").value, payWith);
+    if (!tokenId) { setListStatus("select a pig", "warn"); return; }
+    if (!price) { setListStatus("enter a valid price", "warn"); return; }
+
+    const btn = document.getElementById("list-btn");
+    btn.disabled = true;
+    try {
+      await ensureNftApproval(tokenId);
+      setListStatus("confirm listing in wallet…", "muted");
+      const yard = new ethers.Contract(PIG_YARD_ADDRESS, YARD_ABI, signer);
+      const tx = await yard.list(tokenId, price, payWith);
+      await tx.wait();
+      setListStatus(`pig #${tokenId} listed`, "accent");
+      document.getElementById("list-price").value = "";
+      await refreshOwnedPigs();
+      await loadListings();
+    } catch (err) {
+      const msg = err?.reason || err?.shortMessage || err?.message || "list failed";
+      setListStatus(/user rejected|denied/i.test(msg) ? "cancelled" : msg, "warn");
+    }
+    btn.disabled = false;
+  }
+
+  async function cancelListing() {
+    if (!signer || !YARD_LIVE) return;
+    const tokenId = Number(document.getElementById("list-pig").value);
+    if (!tokenId) { setListStatus("select your listed pig", "warn"); return; }
+    const btn = document.getElementById("cancel-btn");
+    btn.disabled = true;
+    try {
+      setListStatus("confirm cancel in wallet…", "muted");
+      const yard = new ethers.Contract(PIG_YARD_ADDRESS, YARD_ABI, signer);
+      const tx = await yard.cancel(tokenId);
+      await tx.wait();
+      setListStatus(`listing #${tokenId} cancelled`, "accent");
+      await refreshOwnedPigs();
+      await loadListings();
+    } catch (err) {
+      const msg = err?.reason || err?.shortMessage || err?.message || "cancel failed";
+      setListStatus(/user rejected|denied/i.test(msg) ? "cancelled" : msg, "warn");
+    }
+    btn.disabled = false;
+  }
+
+  async function buyPig(tokenId) {
+    if (!signer) {
+      await openWalletModal();
+      return;
+    }
+    if (!YARD_LIVE) return;
+    const listing = activeListings.find((l) => l.id === tokenId);
+    if (!listing) return;
+
+    setListStatus(`buying pig #${tokenId}…`, "muted");
+    try {
+      const yard = new ethers.Contract(PIG_YARD_ADDRESS, YARD_ABI, signer);
+      if (listing.payWith === PayWith.OINK) {
+        await ensureOinkApproval(listing.price);
+        const tx = await yard.buy(tokenId);
+        await tx.wait();
+      } else {
+        const tx = await yard.buy(tokenId, { value: listing.price });
+        await tx.wait();
+      }
+      setListStatus(`you bought pig #${tokenId}`, "accent");
+      await refreshOwnedPigs();
+      await loadListings();
+    } catch (err) {
+      const msg = err?.reason || err?.shortMessage || err?.message || "buy failed";
+      setListStatus(/user rejected|denied/i.test(msg) ? "cancelled" : msg, "warn");
+    }
+  }
+
+  document.getElementById("wallet-btn").addEventListener("click", () => {
+    if (userAddress) {
+      userAddress = null;
+      signer = null;
+      walletProvider = null;
+      document.getElementById("wallet-btn").textContent = "CONNECT";
+      document.getElementById("wallet-btn").classList.remove("is-connected");
+      enableListForm(false);
+      document.getElementById("list-pig").innerHTML = '<option value="">connect wallet</option>';
+      setListStatus("connect on robinhood chain");
+      renderGrid();
+      return;
+    }
+    openWalletModal();
+  });
+  document.getElementById("wallet-close").addEventListener("click", closeWalletModal);
+  document.getElementById("wallet-modal").addEventListener("click", (e) => {
+    if (e.target.id === "wallet-modal") closeWalletModal();
+  });
+  document.getElementById("list-btn").addEventListener("click", listPig);
+  document.getElementById("cancel-btn").addEventListener("click", cancelListing);
+  document.getElementById("list-pay").addEventListener("change", () => {
+    const payWith = Number(document.getElementById("list-pay").value);
+    const input = document.getElementById("list-price");
+    input.placeholder = payWith === PayWith.ETH ? "e.g. 0.05" : "e.g. 50000";
+  });
+
+  if (!YARD_LIVE) {
+    document.getElementById("deploy-banner").hidden = false;
+    enableListForm(false);
+  }
+
+  provider = new ethers.JsonRpcProvider(RPC_URL);
+  loadListings();
+  setInterval(loadListings, 45000);
+</script>
+</body>
+</html>
