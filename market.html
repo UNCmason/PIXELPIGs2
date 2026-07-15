@@ -181,7 +181,7 @@
 
 <header class="hero container">
   <h1>PIG YARD</h1>
-  <p>OINK is the yard currency · zero fee on ETH listings · 5% sell fee on OINK</p>
+  <p>OINK trades are free · ETH buys pay +5% · ETH sellers pay 5%</p>
 </header>
 
 <div class="container yard-stats" id="yard-stats">
@@ -218,7 +218,7 @@
     </div>
     <button type="button" class="btn" id="list-btn" disabled>LIST PIG</button>
     <button type="button" class="btn btn-secondary" id="cancel-btn" disabled>CANCEL MY LISTING</button>
-    <p style="font-size:6px;color:var(--muted);line-height:1.6;margin:10px 0 0">List in OINK when you can — ETH listings have no fee but don't boost OINK utility.</p>
+    <p style="font-size:6px;color:var(--muted);line-height:1.6;margin:10px 0 0">OINK = zero fees. ETH listings cost buyers + sellers 5% each.</p>
     <div class="status muted" id="list-status">connect on robinhood chain</div>
   </aside>
 
@@ -273,9 +273,10 @@
     "function cancel(uint256 tokenId)",
     "function buy(uint256 tokenId) payable",
     "function getListing(uint256 tokenId) view returns (address seller, uint256 price, uint8 payWith, bool active)",
-    "function OINK_SELL_FEE_BPS() view returns (uint256)",
-    "function ETH_SELL_FEE_BPS() view returns (uint256)",
-    "function sellFeeBps(uint8 payWith) view returns (uint256)"
+    "function ETH_BUYER_FEE_BPS() view returns (uint256)",
+    "function ETH_SELLER_FEE_BPS() view returns (uint256)",
+    "function quoteEthBuy(uint256 price) view returns (uint256 totalDue, uint256 totalFee)",
+    "function oinkFeeBps() view returns (uint256)"
   ];
 
   const PayWith = { OINK: 0, ETH: 1 };
@@ -334,7 +335,11 @@
   }
 
   function priceLabel(price, payWith) {
-    return payWith === PayWith.ETH ? formatEth(price) : formatOink(price);
+    if (payWith === PayWith.ETH) {
+      const buyerFee = (price * 500n) / 10000n;
+      return `${formatEth(price)} + ${formatEth(buyerFee)} fee`;
+    }
+    return formatOink(price);
   }
 
   function providerLabel(p) {
@@ -619,7 +624,8 @@
         const tx = await yard.buy(tokenId);
         await tx.wait();
       } else {
-        const tx = await yard.buy(tokenId, { value: listing.price });
+        const [totalDue] = await yard.quoteEthBuy(listing.price);
+        const tx = await yard.buy(tokenId, { value: totalDue });
         await tx.wait();
       }
       setListStatus(`you bought pig #${tokenId}`, "accent");
