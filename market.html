@@ -192,12 +192,7 @@
 
 <div class="container" id="mintout-banner" hidden>
   <div class="deploy-banner" style="border-color:var(--rh-green);color:var(--rh-green);background:#0a1200">
-    Pig Yard opens <strong>after mint-out</strong> when OINK has liquidity. Deploy <code>PigYard.sol</code> now — trading goes live on the site then.
-  </div>
-</div>
-<div class="container" id="deploy-banner" hidden>
-  <div class="deploy-banner">
-    Pig Yard contract not linked yet. Set <code>PIG_YARD_ADDRESS</code> in this page after Remix deploy.
+    Pig Yard opens <strong>after mint-out</strong>.
   </div>
 </div>
 
@@ -223,7 +218,7 @@
     </div>
     <button type="button" class="btn" id="list-btn" disabled>LIST PIG</button>
     <button type="button" class="btn btn-secondary" id="cancel-btn" disabled>CANCEL MY LISTING</button>
-    <p style="font-size:6px;color:var(--muted);line-height:1.6;margin:10px 0 0">OINK = zero fees. ETH = 3% buyer + 3% seller. Yard opens after mint-out.</p>
+    <p style="font-size:6px;color:var(--muted);line-height:1.6;margin:10px 0 0">OINK = zero fees. ETH = 3% buyer + 3% seller.</p>
     <div class="status muted" id="list-status">connect on robinhood chain</div>
   </aside>
 
@@ -248,7 +243,6 @@
 </div>
 
 <script>
-  // Set after deploying PigYard.sol on Robinhood Chain
   const PIG_YARD_ADDRESS = "0x81b101Ea49d5e6315126E0Dac97e012C9E1a65cB";
 
   const PIGS_ADDRESS = "0xc51e0a920133D1491Db4ee4BA461e0BE77B4b3b8";
@@ -357,13 +351,10 @@
   function updateYardGate() {
     yardTradingOpen = YARD_LIVE && mintedOut;
     document.getElementById("mintout-banner").hidden = mintedOut;
-    document.getElementById("deploy-banner").hidden = YARD_LIVE;
     if (!yardTradingOpen) {
       enableListForm(false);
       if (!mintedOut) {
-        setListStatus("yard opens after mint-out + OINK liquidity", "muted");
-      } else if (!YARD_LIVE) {
-        setListStatus("awaiting pig yard contract link", "muted");
+        setListStatus("yard opens after mint-out", "muted");
       }
     } else if (userAddress) {
       enableListForm(true);
@@ -521,7 +512,7 @@
   async function loadListings() {
     const grid = document.getElementById("listing-grid");
     if (!YARD_LIVE) {
-      grid.innerHTML = '<div class="empty">Pig Yard contract not deployed yet.</div>';
+      grid.innerHTML = '<div class="empty">no listings yet</div>';
       return;
     }
     grid.innerHTML = '<div class="empty">scanning listings…</div>';
