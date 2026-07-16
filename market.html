@@ -93,6 +93,12 @@
       background:#1a1400; border:2px solid #ffaa00; color:#ffaa00;
       font-size:7px; padding:12px; margin-bottom:16px; text-align:center; line-height:1.7;
     }
+    .oink-claim-notice {
+      background:#1a1008; border:2px solid var(--pig); color:var(--pig);
+      font-size:6px; padding:10px; margin-bottom:12px; line-height:1.7;
+    }
+    .oink-claim-notice a { color:var(--rh-green); text-decoration:none; }
+    .oink-claim-notice a:hover { text-decoration:underline; }
 
     .grid {
       display:grid;
@@ -199,6 +205,11 @@
 <main class="container layout">
   <aside class="panel">
     <h2>LIST A PIG</h2>
+    <p class="oink-claim-notice">
+      <strong>Claim OINK before listing.</strong>
+      Unclaimed $OINK stays with the pig — whoever buys it can claim.
+      <a href="oink.html">Claim on $OINK page →</a>
+    </p>
     <div class="field">
       <label for="list-pig">your pig</label>
       <select id="list-pig" disabled>
