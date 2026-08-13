@@ -129,7 +129,7 @@
 
 <header class="hero container">
   <h1>3D STUDIO</h1>
-  <p>Every pig becomes a voxel toy from the original pixel art. Drag to spin.</p>
+  <p>Minted pigs only — unminted stay hidden. Drag to spin.</p>
 </header>
 
 <main class="container studio">
@@ -178,6 +178,8 @@
   const MAX_ID = 3333;
   const GRID = 72;
   const IMAGES = "https://pixelpigs.s3.filebase.io/images/";
+  const CONTRACT_ADDRESS = "0xc51e0a920133D1491Db4ee4BA461e0BE77B4b3b8";
+  const RPC_URL = "https://rpc.mainnet.chain.robinhood.com";
   const LEGENDARY = [1, 43, 70, 421, 501, 778, 889, 1002, 1338, 2025, 3142, 3333];
 
   const canvas = document.getElementById("viewport");
@@ -191,6 +193,7 @@
   const metaEl = document.getElementById("pig-meta");
 
   let currentId = 1;
+  let mintedCount = 0;
   let currentVoxels = [];
   let currentBg = { r: 0, g: 0, b: 0 };
   let pigMesh = null;
@@ -217,7 +220,40 @@
   function clampId(n) {
     const id = Math.floor(Number(n));
     if (!Number.isFinite(id)) return 1;
-    return Math.min(MAX_ID, Math.max(1, id));
+    const max = mintedCount > 0 ? mintedCount : MAX_ID;
+    return Math.min(max, Math.max(1, id));
+  }
+
+  async function fetchMintedCount() {
+    const res = await fetch(RPC_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "eth_call",
+        params: [{ to: CONTRACT_ADDRESS, data: "0x18160ddd" }, "latest"],
+      }),
+    });
+    const json = await res.json();
+    const n = parseInt(json.result, 16);
+    if (!Number.isFinite(n) || n < 0) throw new Error("bad supply");
+    return n;
+  }
+
+  function renderLegendChips() {
+    const chips = document.getElementById("legend-chips");
+    chips.innerHTML = "";
+    for (const id of LEGENDARY) {
+      if (id > mintedCount) continue;
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip";
+      b.dataset.id = String(id);
+      b.textContent = `#${id}`;
+      b.addEventListener("click", () => showPig(id));
+      chips.appendChild(b);
+    }
   }
 
   const scene = new THREE.Scene();
@@ -462,6 +498,18 @@
   }
 
   async function showPig(rawId) {
+    const wanted = Math.floor(Number(rawId));
+    if (!mintedCount) {
+      setStatus("no minted pigs yet", true);
+      preview.removeAttribute("src");
+      return;
+    }
+    if (Number.isFinite(wanted) && wanted > mintedCount) {
+      setStatus(`#${wanted} is not minted yet`, true);
+      idInput.value = String(mintedCount);
+      return;
+    }
+
     const id = clampId(rawId);
     currentId = id;
     idInput.value = String(id);
@@ -511,7 +559,8 @@
   document.getElementById("prev-btn").addEventListener("click", () => showPig(currentId - 1));
   document.getElementById("next-btn").addEventListener("click", () => showPig(currentId + 1));
   document.getElementById("rand-btn").addEventListener("click", () => {
-    showPig(1 + Math.floor(Math.random() * MAX_ID));
+    if (!mintedCount) return;
+    showPig(1 + Math.floor(Math.random() * mintedCount));
   });
   depthInput.addEventListener("input", () => {
     depthVal.textContent = Number(depthInput.value).toFixed(1);
@@ -534,19 +583,18 @@
     }
   });
 
-  const chips = document.getElementById("legend-chips");
-  for (const id of LEGENDARY) {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "chip";
-    b.dataset.id = String(id);
-    b.textContent = `#${id}`;
-    b.addEventListener("click", () => showPig(id));
-    chips.appendChild(b);
-  }
-
-  const start = clampId(new URLSearchParams(location.search).get("id") || 1);
-  showPig(start);
+  fetchMintedCount()
+    .then((n) => {
+      mintedCount = n;
+      idInput.max = String(Math.max(1, mintedCount));
+      renderLegendChips();
+      const asked = Number(new URLSearchParams(location.search).get("id") || mintedCount || 1);
+      const start = asked > mintedCount ? mintedCount : clampId(asked || 1);
+      showPig(start);
+    })
+    .catch(() => {
+      setStatus("could not check mint status", true);
+    });
 </script>
 </body>
 </html>
