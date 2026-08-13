@@ -173,6 +173,7 @@
 <script type="module">
   import * as THREE from "three";
   import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+  import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 
   const MAX_ID = 3333;
   const GRID = 72;
@@ -238,15 +239,16 @@
   controls.maxDistance = 110;
   controls.target.set(0, 2, 0);
 
-  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-  const key = new THREE.DirectionalLight(0xffffff, 1.15);
-  key.position.set(24, 40, 30);
+  scene.add(new THREE.HemisphereLight(0xfff1e6, 0x1a1210, 0.9));
+  scene.add(new THREE.AmbientLight(0xffe8d8, 0.28));
+  const key = new THREE.DirectionalLight(0xfff6ee, 0.5);
+  key.position.set(18, 40, 30);
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0xffbc94, 0.45);
-  fill.position.set(-30, 10, 12);
+  const fill = new THREE.DirectionalLight(0xffc4a0, 0.28);
+  fill.position.set(-26, 14, 18);
   scene.add(fill);
-  const rim = new THREE.DirectionalLight(0xccff00, 0.35);
-  rim.position.set(0, 18, -40);
+  const rim = new THREE.DirectionalLight(0xffe2b8, 0.16);
+  rim.position.set(0, 20, -36);
   scene.add(rim);
 
   const floor = new THREE.Mesh(
@@ -343,45 +345,95 @@
     for (let y = 0; y < GRID; y++) {
       for (let x = 0; x < GRID; x++) {
         if (!occupied[y][x]) continue;
-        voxels.push({ x, y, z: thick[y][x], ...colors[y][x] });
+        let br = 0, bgc = 0, bb = 0, n = 0;
+        for (let dy = -5; dy <= 5; dy++) {
+          for (let dx = -5; dx <= 5; dx++) {
+            const nx = x + dx, ny = y + dy;
+            if (nx < 0 || ny < 0 || nx >= GRID || ny >= GRID) continue;
+            const c = colors[ny][nx];
+            if (!c) continue;
+            const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+            if (lum < 38) continue;
+            br += c.r; bgc += c.g; bb += c.b; n++;
+          }
+        }
+        const col = colors[y][x];
+        const lum = 0.2126 * col.r + 0.7152 * col.g + 0.0722 * col.b;
+        if (!n) { br = col.r; bgc = col.g; bb = col.b; n = 1; }
+        voxels.push({
+          x, y, z: thick[y][x],
+          r: col.r, g: col.g, b: col.b,
+          br: br / n, bg: bgc / n, bb: bb / n,
+          ink: lum < 38,
+        });
       }
     }
     return { voxels, bg };
   }
 
-  function rebuildMesh(depthScale) {
-    if (pigMesh) {
-      scene.remove(pigMesh);
-      pigMesh.geometry.dispose();
-      pigMesh.material.dispose();
-      pigMesh = null;
-    }
-    if (!currentVoxels.length) return;
-
-    const geo = new THREE.BoxGeometry(0.92, 0.92, 0.92);
-    const mat = new THREE.MeshLambertMaterial();
-    const mesh = new THREE.InstancedMesh(geo, mat, currentVoxels.length);
-    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
-
+  function makeLayer(geo, mat, items, place, tint) {
+    const mesh = new THREE.InstancedMesh(geo, mat, items.length);
     const dummy = new THREE.Object3D();
     const color = new THREE.Color();
-    const cx = (GRID - 1) / 2;
-    const cy = (GRID - 1) / 2;
-
-    currentVoxels.forEach((v, i) => {
-      const depth = Math.max(1.1, 1 + v.z * depthScale);
-      dummy.position.set(v.x - cx, cy - v.y, 0);
-      dummy.scale.set(1, 1, depth);
+    items.forEach((v, i) => {
+      place(dummy, v);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
-      color.setRGB(v.r / 255, v.g / 255, v.b / 255);
+      const rgb = tint(v);
+      color.setRGB(rgb.r / 255, rgb.g / 255, rgb.b / 255);
       color.convertSRGBToLinear();
       mesh.setColorAt(i, color);
     });
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-    scene.add(mesh);
-    pigMesh = mesh;
+    return mesh;
+  }
+
+  function rebuildMesh(depthScale) {
+    if (pigMesh) {
+      scene.remove(pigMesh);
+      const seen = new Set();
+      pigMesh.traverse((obj) => {
+        if (obj.geometry && !seen.has(obj.geometry)) {
+          seen.add(obj.geometry);
+          obj.geometry.dispose();
+        }
+        if (obj.material && !seen.has(obj.material)) {
+          seen.add(obj.material);
+          obj.material.dispose();
+        }
+      });
+      pigMesh = null;
+    }
+    if (!currentVoxels.length) return;
+
+    const geo = new RoundedBoxGeometry(0.98, 0.98, 0.98, 2, 0.32);
+    const mat = new THREE.MeshLambertMaterial();
+    const cx = (GRID - 1) / 2;
+    const cy = (GRID - 1) / 2;
+    const group = new THREE.Group();
+
+    const bodyVoxels = currentVoxels.filter((v) => !v.ink);
+    const body = makeLayer(geo, mat, bodyVoxels, (dummy, v) => {
+      const depth = Math.max(1.4, 1.2 + v.z * depthScale);
+      dummy.position.set(v.x - cx, cy - v.y, depth / 2);
+      dummy.scale.set(1, 1, depth);
+    }, (v) => ({
+      r: v.br * 0.62,
+      g: v.bg * 0.58,
+      b: v.bb * 0.55,
+    }));
+
+    const face = makeLayer(geo, mat.clone(), currentVoxels, (dummy, v) => {
+      const bodyDepth = Math.max(1.4, 1.2 + v.z * depthScale);
+      dummy.position.set(v.x - cx, cy - v.y, bodyDepth + 0.35);
+      dummy.scale.set(1, 1, 0.72);
+    }, (v) => ({ r: v.r, g: v.g, b: v.b }));
+
+    group.add(body);
+    group.add(face);
+    scene.add(group);
+    pigMesh = group;
 
     const lowest = Math.max(...currentVoxels.map((v) => v.y));
     floor.position.y = cy - lowest - 1.6;
