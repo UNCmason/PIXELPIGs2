@@ -419,6 +419,84 @@
     return mesh;
   }
 
+  function exactPixelTexture(voxels) {
+    const paint = document.createElement("canvas");
+    paint.width = GRID;
+    paint.height = GRID;
+    const ctx = paint.getContext("2d");
+    const img = ctx.createImageData(GRID, GRID);
+    for (const v of voxels) {
+      const i = (v.y * GRID + v.x) * 4;
+      img.data[i] = v.r;
+      img.data[i + 1] = v.g;
+      img.data[i + 2] = v.b;
+      img.data[i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    const tex = new THREE.CanvasTexture(paint);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  function buildPixelFace(voxels, depthFn) {
+    const at = Array.from({ length: GRID }, () => Array(GRID).fill(null));
+    for (const v of voxels) at[v.y][v.x] = v;
+
+    function cornerZ(cx, cy) {
+      let s = 0, n = 0;
+      for (const [dx, dy] of [[0, 0], [-1, 0], [0, -1], [-1, -1]]) {
+        const x = cx + dx, y = cy + dy;
+        if (x < 0 || y < 0 || x >= GRID || y >= GRID || !at[y][x]) continue;
+        s += depthFn(at[y][x]) * 0.5;
+        n++;
+      }
+      return n ? s / n : 0;
+    }
+
+    const positions = [];
+    const uvs = [];
+    const indices = [];
+    for (let y = 0; y < GRID; y++) {
+      for (let x = 0; x < GRID; x++) {
+        if (!at[y][x]) continue;
+        const z00 = cornerZ(x, y);
+        const z10 = cornerZ(x + 1, y);
+        const z11 = cornerZ(x + 1, y + 1);
+        const z01 = cornerZ(x, y + 1);
+        const i = positions.length / 3;
+        positions.push(
+          x - GRID / 2, GRID / 2 - y, z00 + 0.07,
+          x + 1 - GRID / 2, GRID / 2 - y, z10 + 0.07,
+          x + 1 - GRID / 2, GRID / 2 - (y + 1), z11 + 0.07,
+          x - GRID / 2, GRID / 2 - (y + 1), z01 + 0.07
+        );
+        const u0 = (x + 0.04) / GRID;
+        const u1 = (x + 0.96) / GRID;
+        const v0 = 1 - (y + 0.04) / GRID;
+        const v1 = 1 - (y + 0.96) / GRID;
+        uvs.push(u0, v0, u1, v0, u1, v1, u0, v1);
+        indices.push(i, i + 1, i + 2, i, i + 2, i + 3);
+      }
+    }
+
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+    geo.setIndex(indices);
+    geo.computeVertexNormals();
+
+    const mat = new THREE.MeshBasicMaterial({
+      map: exactPixelTexture(voxels),
+      transparent: true,
+      alphaTest: 0.05,
+    });
+    return new THREE.Mesh(geo, mat);
+  }
+
   function rebuildMesh(depthScale) {
     if (pigMesh) {
       scene.remove(pigMesh);
@@ -430,6 +508,7 @@
         }
         if (obj.material && !seen.has(obj.material)) {
           seen.add(obj.material);
+          if (obj.material.map) obj.material.map.dispose();
           obj.material.dispose();
         }
       });
@@ -438,7 +517,6 @@
     if (!currentVoxels.length) return;
 
     const bodyGeo = new RoundedBoxGeometry(1, 1, 1, 4, 0.48);
-    const detailGeo = new RoundedBoxGeometry(0.78, 0.78, 0.78, 2, 0.2);
     const mat = new THREE.MeshLambertMaterial();
     const cx = (GRID - 1) / 2;
     const cy = (GRID - 1) / 2;
@@ -449,47 +527,21 @@
       return 1.45 + dome * (2.2 + depthScale * 1.6);
     }
 
-    function puff(v) {
-      return 1.34 + Math.min(v.z, 8) * 0.02;
-    }
-
     const bodyVoxels = currentVoxels.filter((v) => !v.ink);
-    const skinVoxels = currentVoxels.filter((v) => !v.detail);
-    const detailVoxels = currentVoxels.filter((v) => v.detail);
-
     if (bodyVoxels.length) {
       group.add(makeLayer(bodyGeo, mat, bodyVoxels, (dummy, v) => {
         const depth = bodyDepth(v);
-        const s = puff(v);
+        const s = 1.2 + Math.min(v.z, 8) * 0.018;
         dummy.position.set(v.x - cx, cy - v.y, 0);
         dummy.scale.set(s, s, depth);
       }, (v) => ({
-        r: v.br * 0.78,
-        g: v.bg * 0.74,
-        b: v.bb * 0.7,
+        r: v.br * 0.72,
+        g: v.bg * 0.68,
+        b: v.bb * 0.64,
       })));
     }
 
-    if (skinVoxels.length) {
-      group.add(makeLayer(bodyGeo, mat.clone(), skinVoxels, (dummy, v) => {
-        const depth = bodyDepth(v);
-        const s = puff(v) * 0.92;
-        dummy.position.set(v.x - cx, cy - v.y, depth * 0.5 - 0.16);
-        dummy.scale.set(s, s, 0.3);
-      }, (v) => ({
-        r: v.sr * 0.55 + v.r * 0.45,
-        g: v.sg * 0.55 + v.g * 0.45,
-        b: v.sb * 0.55 + v.b * 0.45,
-      })));
-    }
-
-    if (detailVoxels.length) {
-      group.add(makeLayer(detailGeo, mat.clone(), detailVoxels, (dummy, v) => {
-        const depth = bodyDepth(v);
-        dummy.position.set(v.x - cx, cy - v.y, depth * 0.5 - 0.02);
-        dummy.scale.set(0.9, 0.9, 0.4);
-      }, (v) => ({ r: v.r, g: v.g, b: v.b })));
-    }
+    group.add(buildPixelFace(currentVoxels, bodyDepth));
     scene.add(group);
     pigMesh = group;
 
