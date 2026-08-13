@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PIXELPIGS • MINT NOW</title>
-  <meta name="description" content="Mint PixelPigs — 3,333 pure code pigs on Robinhood Chain. $1 each in ETH. No AI.">
+  <meta name="description" content="Mint PixelPigs — 3,333 pure code pigs on Robinhood Chain. First 1,666 public. No AI.">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap">
   <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
   <style>
@@ -189,14 +189,14 @@
         </svg>
         <span class="x-handle">@HoodPixelPigs</span>
       </a>
-      <p class="brand-sub" id="hero-subtitle">Robinhood Chain • $1 in ETH</p>
+      <p class="brand-sub" id="hero-subtitle">Robinhood Chain</p>
       <p class="explore-links"><a href="market.html">yard</a><a href="3d.html">3d</a><a href="legendary.html">legendary</a><a href="stats.html">stats</a><a href="faq.html">faq</a></p>
     </section>
 
     <section class="mint-section">
       <div class="mint-head">
         <h2>MINT</h2>
-        <div class="mint-meta">3,333 supply<br>11 per wallet</div>
+        <div class="mint-meta">3,333 supply · 11 / wallet<br>first 1,666 public</div>
       </div>
 
       <div class="mint-stats">
@@ -420,7 +420,7 @@
     rpc: "https://rpc.mainnet.chain.robinhood.com",
     explorer: "https://robinhoodchain.blockscout.com",
     tag: "3,333",
-    subtitle: "Robinhood Chain • $1 in ETH",
+    subtitle: "Robinhood Chain",
     defaultMaxWallet: 11,
   };
 
@@ -440,6 +440,8 @@
   const MINT_USD = 1;
   const ETH_USD_POLL_MS = 60000;
   const GAS_BUFFER_ETH = 0.00015;
+  const PUBLIC_FREE_UNTIL = 1666;
+  const DUST_WEI = 1000000000000n;
 
   let walletProvider = null; // injected EIP-1193 provider
   let provider;
@@ -673,11 +675,19 @@
       return;
     }
     const soldOut = remaining <= 0;
-    btn.disabled = soldOut;
-    if (!soldOut && btn.textContent !== "CONFIRM IN WALLET..." && btn.textContent !== "MINT MORE") {
-      btn.textContent = "MINT NOW";
+    const gated = publicMintClosed();
+    btn.disabled = soldOut || gated;
+    if (soldOut) {
+      btn.textContent = "SOLD OUT";
+      return;
     }
-    if (soldOut) btn.textContent = "SOLD OUT";
+    if (gated) {
+      btn.textContent = "GATED";
+      return;
+    }
+    if (btn.textContent !== "CONFIRM IN WALLET..." && btn.textContent !== "MINT MORE") {
+      btn.textContent = publicFreeOpen() ? "MINT FREE" : "MINT NOW";
+    }
   }
 
   function setupWalletListeners() {
@@ -884,9 +894,39 @@
     }
   }
 
+  function mintedCount() {
+    return Math.max(0, MAX_SUPPLY - remaining);
+  }
+
+  function isDustPrice() {
+    return mintPriceWei > 0n && mintPriceWei < DUST_WEI;
+  }
+
+  function publicFreeOpen() {
+    return mintedCount() < PUBLIC_FREE_UNTIL && isDustPrice();
+  }
+
+  function publicMintClosed() {
+    return mintedCount() >= PUBLIC_FREE_UNTIL && isDustPrice();
+  }
+
   function updatePriceDisplay() {
     const priceEl = document.getElementById("price-display");
     const perPig = perPigEthAmount();
+
+    if (publicMintClosed()) {
+      priceEl.innerHTML = `GATED <small>public mint closed</small>`;
+      document.getElementById("price-sync").style.display = "none";
+      updateTotal();
+      return;
+    }
+
+    if (publicFreeOpen()) {
+      priceEl.innerHTML = `FREE <small>gas only · ${PUBLIC_FREE_UNTIL - mintedCount()} left in public</small>`;
+      document.getElementById("price-sync").style.display = "none";
+      updateTotal();
+      return;
+    }
 
     if (!TESTNET_MODE && ethPriceUsd > 0 && perPig > 0) {
       const usdPerPig = perPig * ethPriceUsd;
@@ -911,6 +951,11 @@
 
     document.getElementById("qty-text").textContent = quantity;
     document.getElementById("s-text").textContent = quantity > 1 ? "S" : "";
+
+    if (publicFreeOpen()) {
+      totalEl.textContent = quantity > 1 ? " · free" : "";
+      return;
+    }
 
     if (quantity > 1 && totalEth > 0) {
       let usd = "";
@@ -1050,6 +1095,10 @@
 
     if (remaining <= 0) {
       alert("Sold out.");
+      return;
+    }
+    if (publicMintClosed()) {
+      alert("Public mint is closed.");
       return;
     }
     if (maxMintable() <= 0) {
