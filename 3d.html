@@ -149,7 +149,6 @@
     <label class="check"><input type="checkbox" id="auto-rotate" checked> auto-rotate</label>
     <label class="check"><input type="checkbox" id="show-bg" checked> keep background color</label>
     <button type="button" class="btn btn-wide" id="shot-btn">SAVE SNAPSHOT</button>
-    <button type="button" class="btn btn-secondary btn-wide" id="share-btn">COPY LINK</button>
     <p class="meta" id="pig-meta">PixelPig <strong>#1</strong></p>
   </aside>
 </main>
@@ -549,15 +548,6 @@
     a.href = renderer.domElement.toDataURL("image/png");
     a.download = `pixelpig-${currentId}-3d.png`;
     a.click();
-  });
-  document.getElementById("share-btn").addEventListener("click", async () => {
-    const url = `${location.origin}${location.pathname}?id=${currentId}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setStatus(`copied link for #${currentId}`);
-    } catch {
-      setStatus(url);
-    }
   });
 
   fetchMintedCount()
