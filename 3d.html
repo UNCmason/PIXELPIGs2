@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PIXELPIGS • 3D STUDIO</title>
+  <meta name="description" content="Spin any PixelPig in 3D — voxelized from the original pixel art.">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap">
+  <style>
+    :root {
+      --bg:#000000; --card:#121212;
+      --pig:#FFBC94; --pig-dim:#E8A070;
+      --rh-green:#CCFF00; --rh-green-dim:#A3CC00;
+      --muted:#6b6b6b; --border:#1e1e1e; --text:#ffffff;
+    }
+    * { box-sizing:border-box; }
+    html, body { margin:0; min-height:100%; }
+    body {
+      background:var(--bg); color:var(--text);
+      font-family:"Press Start 2P", system-ui, sans-serif; font-size:10px;
+      line-height:1.6;
+    }
+    .container { max-width:1100px; margin:0 auto; padding:0 20px; }
+    nav { border-bottom:2px solid var(--rh-green); padding:12px 0; }
+    .nav { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .logo { font-size:11px; letter-spacing:1px; text-decoration:none; color:var(--text); }
+    .logo:hover { color:var(--rh-green); }
+    .nav-links { display:flex; gap:8px; font-size:7px; flex-wrap:wrap; }
+    .nav-links a {
+      color:var(--text); text-decoration:none; cursor:pointer;
+      border:2px solid var(--border); padding:6px 10px;
+      transition:border-color .15s, color .15s, background .15s;
+    }
+    .nav-links a:hover { border-color:var(--rh-green); color:var(--rh-green); }
+    .nav-links a.active { border-color:var(--rh-green); color:var(--rh-green); background:rgba(204,255,0,0.08); }
+    .nav-links a[href="oink.html"] { color:var(--pig); border-color:rgba(255,188,148,0.45); }
+    .nav-links a[href="oink.html"]:hover { color:var(--pig); border-color:var(--pig); background:rgba(255,188,148,0.08); }
+
+    .hero { text-align:center; padding:22px 0 14px; }
+    .hero h1 {
+      font-size:clamp(14px,3vw,22px); margin:0 0 8px; letter-spacing:2px;
+      color:var(--pig); text-shadow:2px 2px 0 var(--pig-dim);
+    }
+    .hero p { font-size:7px; color:var(--muted); margin:0; }
+
+    .studio {
+      display:grid; grid-template-columns:minmax(0,1fr) minmax(240px,280px);
+      gap:16px; padding-bottom:40px; align-items:start;
+    }
+    .stage {
+      background:#070707; border:2px solid var(--pig); position:relative;
+      min-height:420px; aspect-ratio:1 / 1; max-height:min(72vh,720px);
+    }
+    #viewport { width:100%; height:100%; display:block; }
+    .stage-hint {
+      position:absolute; left:10px; bottom:10px; font-size:6px; color:var(--muted);
+      pointer-events:none; line-height:1.6;
+    }
+    .stage-status {
+      position:absolute; top:10px; left:10px; right:10px;
+      font-size:6px; color:var(--rh-green); pointer-events:none;
+    }
+    .stage-status.err { color:#ffaa00; }
+
+    .panel {
+      background:var(--card); border:2px solid var(--pig); padding:14px;
+    }
+    .panel h2 { font-size:8px; margin:0 0 12px; color:var(--pig); }
+    .preview {
+      width:100%; aspect-ratio:1; background:#0a0a0a; border:2px solid var(--border);
+      image-rendering:pixelated; image-rendering:crisp-edges; object-fit:contain;
+      margin-bottom:12px; display:block;
+    }
+    .row { display:flex; gap:6px; margin-bottom:8px; }
+    .row input[type="number"], .row input[type="text"] {
+      flex:1; min-width:0; background:var(--bg); border:2px solid var(--border);
+      color:var(--text); font-family:inherit; font-size:8px; padding:10px;
+    }
+    .row input:focus { outline:none; border-color:var(--rh-green); }
+    .btn {
+      background:var(--pig); color:#000; border:none; padding:10px 12px;
+      font-family:inherit; font-size:8px; cursor:pointer;
+    }
+    .btn:hover { background:var(--pig-dim); }
+    .btn-secondary {
+      background:transparent; color:var(--pig); border:2px solid var(--pig);
+    }
+    .btn-secondary:hover { background:rgba(255,188,148,0.12); }
+    .btn-wide { width:100%; margin-bottom:8px; }
+    label.slider {
+      display:block; font-size:6px; color:var(--muted); margin:10px 0 6px;
+    }
+    input[type="range"] { width:100%; accent-color:var(--rh-green); }
+    .check {
+      display:flex; align-items:center; gap:8px; font-size:6px; color:var(--muted);
+      margin:10px 0; cursor:pointer;
+    }
+    .meta { font-size:6px; color:var(--muted); line-height:1.7; margin:8px 0 0; }
+    .meta strong { color:var(--text); }
+    .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+    .chip {
+      font-size:5px; padding:5px 6px; border:1px solid var(--border);
+      color:var(--muted); background:transparent; font-family:inherit; cursor:pointer;
+    }
+    .chip:hover, .chip.on { border-color:var(--rh-green); color:var(--rh-green); }
+
+    @media (max-width:860px) {
+      .studio { grid-template-columns:1fr; }
+      .stage { aspect-ratio:1; max-height:none; min-height:300px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="container nav">
+    <a class="logo" href="index.html">PIXELPIGS</a>
+    <div class="nav-links">
+      <a href="index.html">mint</a>
+      <a href="market.html">yard</a>
+      <a href="3d.html" class="active">3d</a>
+      <a href="legendary.html">legendary</a>
+      <a href="stats.html">stats</a>
+      <a href="oink.html">$oink</a>
+      <a href="faq.html">faq</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero container">
+  <h1>3D STUDIO</h1>
+  <p>Every pig becomes a voxel toy from the original pixel art. Drag to spin.</p>
+</header>
+
+<main class="container studio">
+  <div class="stage">
+    <canvas id="viewport"></canvas>
+    <div class="stage-status" id="stage-status">loading pig…</div>
+    <div class="stage-hint">drag to orbit · scroll to zoom</div>
+  </div>
+
+  <aside class="panel">
+    <h2>PICK A PIG</h2>
+    <img class="preview" id="preview" alt="2D PixelPig" width="240" height="240">
+    <div class="row">
+      <input id="pig-id" type="number" min="1" max="3333" value="1" aria-label="Token ID">
+      <button type="button" class="btn" id="go-btn">GO</button>
+    </div>
+    <div class="row">
+      <button type="button" class="btn btn-secondary" id="prev-btn">PREV</button>
+      <button type="button" class="btn btn-secondary" id="rand-btn">RANDOM</button>
+      <button type="button" class="btn btn-secondary" id="next-btn">NEXT</button>
+    </div>
+    <label class="slider" for="depth">thickness <span id="depth-val">1.4</span></label>
+    <input id="depth" type="range" min="0.4" max="2.4" step="0.1" value="1.4">
+    <label class="check"><input type="checkbox" id="auto-rotate" checked> auto-rotate</label>
+    <label class="check"><input type="checkbox" id="show-bg" checked> keep background color</label>
+    <button type="button" class="btn btn-wide" id="shot-btn">SAVE SNAPSHOT</button>
+    <button type="button" class="btn btn-secondary btn-wide" id="share-btn">COPY LINK</button>
+    <p class="meta" id="pig-meta">PixelPig <strong>#1</strong></p>
+    <div class="chips" id="legend-chips"></div>
+  </aside>
+</main>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.1/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.1/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+  import * as THREE from "three";
+  import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+
+  const MAX_ID = 3333;
+  const GRID = 72;
+  const IMAGES = "https://pixelpigs.s3.filebase.io/images/";
+  const LEGENDARY = [1, 43, 70, 421, 501, 778, 889, 1002, 1338, 2025, 3142, 3333];
+
+  const canvas = document.getElementById("viewport");
+  const preview = document.getElementById("preview");
+  const statusEl = document.getElementById("stage-status");
+  const idInput = document.getElementById("pig-id");
+  const depthInput = document.getElementById("depth");
+  const depthVal = document.getElementById("depth-val");
+  const autoRotate = document.getElementById("auto-rotate");
+  const showBg = document.getElementById("show-bg");
+  const metaEl = document.getElementById("pig-meta");
+
+  let currentId = 1;
+  let currentVoxels = [];
+  let currentBg = { r: 0, g: 0, b: 0 };
+  let pigMesh = null;
+  let floorMesh = null;
+
+  function imageIdx(tokenId) {
+    return String(tokenId - 1).padStart(4, "0");
+  }
+
+  function imageUrl(tokenId) {
+    return `${IMAGES}${imageIdx(tokenId)}.png`;
+  }
+
+  function corsImageUrl(tokenId) {
+    const raw = `pixelpigs.s3.filebase.io/images/${imageIdx(tokenId)}.png`;
+    return `https://wsrv.nl/?url=${encodeURIComponent(raw)}&output=png`;
+  }
+
+  function setStatus(msg, err = false) {
+    statusEl.textContent = msg;
+    statusEl.className = err ? "stage-status err" : "stage-status";
+  }
+
+  function clampId(n) {
+    const id = Math.floor(Number(n));
+    if (!Number.isFinite(id)) return 1;
+    return Math.min(MAX_ID, Math.max(1, id));
+  }
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x070707);
+  scene.fog = new THREE.Fog(0x070707, 90, 160);
+
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 400);
+  camera.position.set(38, 22, 54);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 1.4;
+  controls.minDistance = 28;
+  controls.maxDistance = 110;
+  controls.target.set(0, 2, 0);
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 1.15);
+  key.position.set(24, 40, 30);
+  scene.add(key);
+  const fill = new THREE.DirectionalLight(0xffbc94, 0.45);
+  fill.position.set(-30, 10, 12);
+  scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xccff00, 0.35);
+  rim.position.set(0, 18, -40);
+  scene.add(rim);
+
+  const floor = new THREE.Mesh(
+    new THREE.CircleGeometry(38, 48),
+    new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9, metalness: 0 })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -18;
+  scene.add(floor);
+  floorMesh = floor;
+
+  function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const w = Math.max(1, rect.width);
+    const h = Math.max(1, rect.height);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  function loadImage(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("image failed"));
+      img.src = url;
+    });
+  }
+
+  function sampleBg(data, w, h) {
+    const pts = [0, 0, w - 1, 0, 0, h - 1, w - 1, h - 1, 2, 2, w - 3, 2];
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0; i < pts.length; i += 2) {
+      const idx = (pts[i + 1] * w + pts[i]) * 4;
+      r += data[idx]; g += data[idx + 1]; b += data[idx + 2]; n++;
+    }
+    return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
+  }
+
+  function extractVoxels(img) {
+    const c = document.createElement("canvas");
+    c.width = GRID;
+    c.height = GRID;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, 0, 0, GRID, GRID);
+    const { data } = ctx.getImageData(0, 0, GRID, GRID);
+    const bg = sampleBg(data, GRID, GRID);
+    const occupied = Array.from({ length: GRID }, () => Array(GRID).fill(false));
+    const colors = Array.from({ length: GRID }, () => Array(GRID).fill(null));
+
+    for (let y = 0; y < GRID; y++) {
+      for (let x = 0; x < GRID; x++) {
+        const i = (y * GRID + x) * 4;
+        const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+        if (a < 12) continue;
+        const dist = Math.hypot(r - bg.r, g - bg.g, b - bg.b);
+        if (dist < 22) continue;
+        occupied[y][x] = true;
+        colors[y][x] = { r, g, b };
+      }
+    }
+
+    const INF = 99;
+    const thick = Array.from({ length: GRID }, () => Array(GRID).fill(0));
+    const q = [];
+    for (let y = 0; y < GRID; y++) {
+      for (let x = 0; x < GRID; x++) {
+        if (!occupied[y][x]) {
+          thick[y][x] = 0;
+          q.push([x, y]);
+        } else {
+          thick[y][x] = INF;
+        }
+      }
+    }
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (let i = 0; i < q.length; i++) {
+      const [x, y] = q[i];
+      for (const [dx, dy] of dirs) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= GRID || ny >= GRID) continue;
+        if (thick[ny][nx] > thick[y][x] + 1) {
+          thick[ny][nx] = thick[y][x] + 1;
+          q.push([nx, ny]);
+        }
+      }
+    }
+
+    const voxels = [];
+    for (let y = 0; y < GRID; y++) {
+      for (let x = 0; x < GRID; x++) {
+        if (!occupied[y][x]) continue;
+        voxels.push({ x, y, z: thick[y][x], ...colors[y][x] });
+      }
+    }
+    return { voxels, bg };
+  }
+
+  function rebuildMesh(depthScale) {
+    if (pigMesh) {
+      scene.remove(pigMesh);
+      pigMesh.geometry.dispose();
+      pigMesh.material.dispose();
+      pigMesh = null;
+    }
+    if (!currentVoxels.length) return;
+
+    const geo = new THREE.BoxGeometry(0.92, 0.92, 0.92);
+    const mat = new THREE.MeshLambertMaterial();
+    const mesh = new THREE.InstancedMesh(geo, mat, currentVoxels.length);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+
+    const dummy = new THREE.Object3D();
+    const color = new THREE.Color();
+    const cx = (GRID - 1) / 2;
+    const cy = (GRID - 1) / 2;
+
+    currentVoxels.forEach((v, i) => {
+      const depth = Math.max(1.1, 1 + v.z * depthScale);
+      dummy.position.set(v.x - cx, cy - v.y, 0);
+      dummy.scale.set(1, 1, depth);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      color.setRGB(v.r / 255, v.g / 255, v.b / 255);
+      color.convertSRGBToLinear();
+      mesh.setColorAt(i, color);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    scene.add(mesh);
+    pigMesh = mesh;
+
+    const lowest = Math.max(...currentVoxels.map((v) => v.y));
+    floor.position.y = cy - lowest - 1.6;
+  }
+
+  function applyBackground(bg, on) {
+    if (!on) {
+      floor.material.color.setHex(0x111111);
+      return;
+    }
+    const c = new THREE.Color(bg.r / 255, bg.g / 255, bg.b / 255);
+    c.convertSRGBToLinear();
+    floor.material.color.copy(c);
+    floor.material.color.multiplyScalar(0.35);
+  }
+
+  async function showPig(rawId) {
+    const id = clampId(rawId);
+    currentId = id;
+    idInput.value = String(id);
+    const params = new URLSearchParams(location.search);
+    params.set("id", String(id));
+    history.replaceState(null, "", `${location.pathname}?${params.toString()}`);
+
+    preview.src = imageUrl(id);
+    metaEl.innerHTML = `PixelPig <strong>#${id}</strong>`;
+    setStatus(`building #${id}…`);
+    document.querySelectorAll(".chip").forEach((el) => {
+      el.classList.toggle("on", Number(el.dataset.id) === id);
+    });
+
+    try {
+      let img;
+      try {
+        img = await loadImage(corsImageUrl(id));
+      } catch {
+        img = await loadImage(imageUrl(id));
+      }
+      const { voxels, bg } = extractVoxels(img);
+      if (!voxels.length) throw new Error("no pixels found");
+      currentVoxels = voxels;
+      currentBg = bg;
+      rebuildMesh(Number(depthInput.value));
+      applyBackground(bg, showBg.checked);
+      setStatus(`${voxels.length} voxels · #${id}`);
+    } catch (err) {
+      console.warn(err);
+      setStatus("could not read this pig image", true);
+    }
+  }
+
+  function tick() {
+    requestAnimationFrame(tick);
+    controls.autoRotate = autoRotate.checked;
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  tick();
+
+  document.getElementById("go-btn").addEventListener("click", () => showPig(idInput.value));
+  idInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") showPig(idInput.value);
+  });
+  document.getElementById("prev-btn").addEventListener("click", () => showPig(currentId - 1));
+  document.getElementById("next-btn").addEventListener("click", () => showPig(currentId + 1));
+  document.getElementById("rand-btn").addEventListener("click", () => {
+    showPig(1 + Math.floor(Math.random() * MAX_ID));
+  });
+  depthInput.addEventListener("input", () => {
+    depthVal.textContent = Number(depthInput.value).toFixed(1);
+    rebuildMesh(Number(depthInput.value));
+  });
+  showBg.addEventListener("change", () => applyBackground(currentBg, showBg.checked));
+  document.getElementById("shot-btn").addEventListener("click", () => {
+    const a = document.createElement("a");
+    a.href = renderer.domElement.toDataURL("image/png");
+    a.download = `pixelpig-${currentId}-3d.png`;
+    a.click();
+  });
+  document.getElementById("share-btn").addEventListener("click", async () => {
+    const url = `${location.origin}${location.pathname}?id=${currentId}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setStatus(`copied link for #${currentId}`);
+    } catch {
+      setStatus(url);
+    }
+  });
+
+  const chips = document.getElementById("legend-chips");
+  for (const id of LEGENDARY) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "chip";
+    b.dataset.id = String(id);
+    b.textContent = `#${id}`;
+    b.addEventListener("click", () => showPig(id));
+    chips.appendChild(b);
+  }
+
+  const start = clampId(new URLSearchParams(location.search).get("id") || 1);
+  showPig(start);
+</script>
+</body>
+</html>

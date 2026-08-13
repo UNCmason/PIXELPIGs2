@@ -105,6 +105,7 @@
     <div class="nav-links">
       <a href="index.html">mint</a>
       <a href="market.html">yard</a>
+      <a href="3d.html">3d</a>
       <a href="legendary.html" class="active">legendary</a>
       <a href="stats.html">stats</a>
       <a href="oink.html">$oink</a>
@@ -176,9 +177,11 @@
       : "";
 
     const links = minted
-      ? `<a href="${openseaAssetUrl(pig.tokenId)}" target="_blank" rel="noopener">opensea</a>
+      ? `<a href="3d.html?id=${pig.tokenId}">view 3d</a>
+         <a href="${openseaAssetUrl(pig.tokenId)}" target="_blank" rel="noopener">opensea</a>
          <a href="${EXPLORER_URL}/token/${CONTRACT_ADDRESS}/instance/${pig.tokenId}" target="_blank" rel="noopener">explorer</a>`
-      : `<a href="index.html">mint to hunt</a>`;
+      : `<a href="3d.html?id=${pig.tokenId}">view 3d</a>
+         <a href="index.html">mint to hunt</a>`;
 
     return `
       <article class="card ${cardClass}">
