@@ -341,30 +341,60 @@
       }
     }
 
+    let smoothZ = thick.map((row) => row.slice());
+    for (let pass = 0; pass < 3; pass++) {
+      const next = smoothZ.map((row) => row.slice());
+      for (let y = 0; y < GRID; y++) {
+        for (let x = 0; x < GRID; x++) {
+          if (!occupied[y][x]) continue;
+          let s = 0, n = 0;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const nx = x + dx, ny = y + dy;
+              if (nx < 0 || ny < 0 || nx >= GRID || ny >= GRID) continue;
+              if (!occupied[ny][nx]) continue;
+              s += smoothZ[ny][nx];
+              n++;
+            }
+          }
+          next[y][x] = s / n;
+        }
+      }
+      smoothZ = next;
+    }
+
     const voxels = [];
     for (let y = 0; y < GRID; y++) {
       for (let x = 0; x < GRID; x++) {
         if (!occupied[y][x]) continue;
-        let br = 0, bgc = 0, bb = 0, n = 0;
+        let br = 0, bgc = 0, bb = 0, bn = 0;
+        let sr = 0, sg = 0, sb = 0, sn = 0;
+        let contrast = 0;
+        const col = colors[y][x];
         for (let dy = -5; dy <= 5; dy++) {
           for (let dx = -5; dx <= 5; dx++) {
             const nx = x + dx, ny = y + dy;
             if (nx < 0 || ny < 0 || nx >= GRID || ny >= GRID) continue;
             const c = colors[ny][nx];
             if (!c) continue;
-            const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
-            if (lum < 38) continue;
-            br += c.r; bgc += c.g; bb += c.b; n++;
+            const lumN = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+            if (Math.abs(dx) <= 1 && Math.abs(dy) <= 1) {
+              sr += c.r; sg += c.g; sb += c.b; sn++;
+              if (dx || dy) contrast = Math.max(contrast, Math.hypot(c.r - col.r, c.g - col.g, c.b - col.b));
+            }
+            if (lumN < 38) continue;
+            br += c.r; bgc += c.g; bb += c.b; bn++;
           }
         }
-        const col = colors[y][x];
         const lum = 0.2126 * col.r + 0.7152 * col.g + 0.0722 * col.b;
-        if (!n) { br = col.r; bgc = col.g; bb = col.b; n = 1; }
+        if (!bn) { br = col.r; bgc = col.g; bb = col.b; bn = 1; }
         voxels.push({
-          x, y, z: thick[y][x],
+          x, y, z: smoothZ[y][x],
           r: col.r, g: col.g, b: col.b,
-          br: br / n, bg: bgc / n, bb: bb / n,
+          sr: sr / sn, sg: sg / sn, sb: sb / sn,
+          br: br / bn, bg: bgc / bn, bb: bb / bn,
           ink: lum < 38,
+          detail: lum < 48 || contrast > 24,
         });
       }
     }
@@ -407,42 +437,59 @@
     }
     if (!currentVoxels.length) return;
 
-    const geo = new RoundedBoxGeometry(1, 1, 1, 3, 0.45);
+    const bodyGeo = new RoundedBoxGeometry(1, 1, 1, 4, 0.48);
+    const detailGeo = new RoundedBoxGeometry(0.78, 0.78, 0.78, 2, 0.2);
     const mat = new THREE.MeshLambertMaterial();
     const cx = (GRID - 1) / 2;
     const cy = (GRID - 1) / 2;
     const group = new THREE.Group();
 
     function bodyDepth(v) {
-      const dome = Math.sqrt(Math.min(1, v.z / 9));
-      return 1.5 + dome * (2.4 + depthScale * 1.8);
+      const dome = Math.pow(Math.min(1, v.z / 10), 0.62);
+      return 1.45 + dome * (2.2 + depthScale * 1.6);
     }
 
     function puff(v) {
-      return 1.22 + Math.min(v.z, 8) * 0.025;
+      return 1.34 + Math.min(v.z, 8) * 0.02;
     }
 
     const bodyVoxels = currentVoxels.filter((v) => !v.ink);
-    const body = makeLayer(geo, mat, bodyVoxels, (dummy, v) => {
-      const depth = bodyDepth(v);
-      const s = puff(v);
-      dummy.position.set(v.x - cx, cy - v.y, 0);
-      dummy.scale.set(s, s, depth);
-    }, (v) => ({
-      r: v.br * 0.7,
-      g: v.bg * 0.66,
-      b: v.bb * 0.62,
-    }));
+    const skinVoxels = currentVoxels.filter((v) => !v.detail);
+    const detailVoxels = currentVoxels.filter((v) => v.detail);
 
-    const face = makeLayer(geo, mat.clone(), currentVoxels, (dummy, v) => {
-      const depth = bodyDepth(v);
-      const s = puff(v) * 0.96;
-      dummy.position.set(v.x - cx, cy - v.y, depth * 0.5 - 0.12);
-      dummy.scale.set(s, s, 0.38);
-    }, (v) => ({ r: v.r, g: v.g, b: v.b }));
+    if (bodyVoxels.length) {
+      group.add(makeLayer(bodyGeo, mat, bodyVoxels, (dummy, v) => {
+        const depth = bodyDepth(v);
+        const s = puff(v);
+        dummy.position.set(v.x - cx, cy - v.y, 0);
+        dummy.scale.set(s, s, depth);
+      }, (v) => ({
+        r: v.br * 0.78,
+        g: v.bg * 0.74,
+        b: v.bb * 0.7,
+      })));
+    }
 
-    group.add(body);
-    group.add(face);
+    if (skinVoxels.length) {
+      group.add(makeLayer(bodyGeo, mat.clone(), skinVoxels, (dummy, v) => {
+        const depth = bodyDepth(v);
+        const s = puff(v) * 0.92;
+        dummy.position.set(v.x - cx, cy - v.y, depth * 0.5 - 0.16);
+        dummy.scale.set(s, s, 0.3);
+      }, (v) => ({
+        r: v.sr * 0.55 + v.r * 0.45,
+        g: v.sg * 0.55 + v.g * 0.45,
+        b: v.sb * 0.55 + v.b * 0.45,
+      })));
+    }
+
+    if (detailVoxels.length) {
+      group.add(makeLayer(detailGeo, mat.clone(), detailVoxels, (dummy, v) => {
+        const depth = bodyDepth(v);
+        dummy.position.set(v.x - cx, cy - v.y, depth * 0.5 - 0.02);
+        dummy.scale.set(0.9, 0.9, 0.4);
+      }, (v) => ({ r: v.r, g: v.g, b: v.b })));
+    }
     scene.add(group);
     pigMesh = group;
 
