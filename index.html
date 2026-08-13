@@ -441,6 +441,7 @@
   const ETH_USD_POLL_MS = 60000;
   const GAS_BUFFER_ETH = 0.00015;
   const PUBLIC_FREE_UNTIL = 1666;
+  const PHASE2_OPEN = false;
   const DUST_WEI = 1000000000000n;
 
   let walletProvider = null; // injected EIP-1193 provider
@@ -906,8 +907,13 @@
     return mintedCount() < PUBLIC_FREE_UNTIL && isDustPrice();
   }
 
+  function publicSlotsLeft() {
+    if (PHASE2_OPEN) return remaining;
+    return Math.max(0, PUBLIC_FREE_UNTIL - mintedCount());
+  }
+
   function publicMintClosed() {
-    return mintedCount() >= PUBLIC_FREE_UNTIL && isDustPrice();
+    return !PHASE2_OPEN && mintedCount() >= PUBLIC_FREE_UNTIL;
   }
 
   function updatePriceDisplay() {
@@ -973,7 +979,7 @@
   function maxMintable() {
     if (remaining <= 0) return 0;
     const walletLeft = userAddress ? Math.max(0, MAX_PER_WALLET - userMinted) : MAX_PER_WALLET;
-    return Math.max(0, Math.min(remaining, walletLeft));
+    return Math.max(0, Math.min(remaining, walletLeft, publicSlotsLeft()));
   }
 
   function updateQuantityLimits() {
