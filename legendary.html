@@ -120,7 +120,7 @@
 <header class="hero container">
   <div class="legendary-count">12 LEGENDARY</div>
   <h1>LEGENDARY BOARD</h1>
-  <p>Twitter OG grails hidden in the 3,333 supply. Unminted stay secret — mint to reveal them.</p>
+  <p>12 Twitter OG grails in the 3,333 supply.</p>
 </header>
 
 <div class="container board-summary" id="board-summary">
@@ -174,10 +174,8 @@
         </div>
         <div class="card-body">
           <h2 class="card-name">???</h2>
-          <div class="card-meta">id hidden until minted</div>
           <span class="legendary-tag">Twitter OG</span>
-          <p class="card-desc">Still in the supply. Mint to find out who.</p>
-          <div class="card-links"><a href="index.html">mint to hunt</a></div>
+          <div class="card-links"><a href="index.html">mint</a></div>
         </div>
       </article>`;
     }
@@ -241,7 +239,7 @@
       console.error(err);
       board.innerHTML = LEGENDARY_PIGS.map((pig) => renderCard(pig, false, null)).join("");
       document.getElementById("board-summary").innerHTML =
-        '<span class="muted" style="font-size:7px">on-chain status unavailable — hiding unminted pigs</span>';
+        '<span class="muted" style="font-size:7px">could not load board</span>';
     }
   }
 

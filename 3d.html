@@ -97,12 +97,6 @@
     }
     .meta { font-size:6px; color:var(--muted); line-height:1.7; margin:8px 0 0; }
     .meta strong { color:var(--text); }
-    .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
-    .chip {
-      font-size:5px; padding:5px 6px; border:1px solid var(--border);
-      color:var(--muted); background:transparent; font-family:inherit; cursor:pointer;
-    }
-    .chip:hover, .chip.on { border-color:var(--rh-green); color:var(--rh-green); }
 
     @media (max-width:860px) {
       .studio { grid-template-columns:1fr; }
@@ -129,7 +123,6 @@
 
 <header class="hero container">
   <h1>3D STUDIO</h1>
-  <p>Minted pigs only — unminted stay hidden. Drag to spin.</p>
 </header>
 
 <main class="container studio">
@@ -158,7 +151,6 @@
     <button type="button" class="btn btn-wide" id="shot-btn">SAVE SNAPSHOT</button>
     <button type="button" class="btn btn-secondary btn-wide" id="share-btn">COPY LINK</button>
     <p class="meta" id="pig-meta">PixelPig <strong>#1</strong></p>
-    <div class="chips" id="legend-chips"></div>
   </aside>
 </main>
 
@@ -180,7 +172,7 @@
   const IMAGES = "https://pixelpigs.s3.filebase.io/images/";
   const CONTRACT_ADDRESS = "0xc51e0a920133D1491Db4ee4BA461e0BE77B4b3b8";
   const RPC_URL = "https://rpc.mainnet.chain.robinhood.com";
-  const LEGENDARY = [1, 43, 70, 421, 501, 778, 889, 1002, 1338, 2025, 3142, 3333];
+
 
   const canvas = document.getElementById("viewport");
   const preview = document.getElementById("preview");
@@ -241,20 +233,7 @@
     return n;
   }
 
-  function renderLegendChips() {
-    const chips = document.getElementById("legend-chips");
-    chips.innerHTML = "";
-    for (const id of LEGENDARY) {
-      if (id > mintedCount) continue;
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "chip";
-      b.dataset.id = String(id);
-      b.textContent = `#${id}`;
-      b.addEventListener("click", () => showPig(id));
-      chips.appendChild(b);
-    }
-  }
+
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x070707);
@@ -520,9 +499,7 @@
     preview.src = imageUrl(id);
     metaEl.innerHTML = `PixelPig <strong>#${id}</strong>`;
     setStatus(`building #${id}…`);
-    document.querySelectorAll(".chip").forEach((el) => {
-      el.classList.toggle("on", Number(el.dataset.id) === id);
-    });
+
 
     try {
       let img;
@@ -587,7 +564,6 @@
     .then((n) => {
       mintedCount = n;
       idInput.max = String(Math.max(1, mintedCount));
-      renderLegendChips();
       const asked = Number(new URLSearchParams(location.search).get("id") || mintedCount || 1);
       const start = asked > mintedCount ? mintedCount : clampId(asked || 1);
       showPig(start);
