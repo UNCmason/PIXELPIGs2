@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PIXELPIGS • 3D STUDIO</title>
-  <meta name="description" content="Spin any PixelPig as a smooth 3D cartoon figurine.">
+  <meta name="description" content="Spin any PixelPig in 3D — voxelized from the original pixel art.">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap">
   <style>
     :root {
@@ -129,7 +129,7 @@
 
 <header class="hero container">
   <h1>3D STUDIO</h1>
-  <p>Every pig becomes a chubby cartoon figurine. Drag to spin.</p>
+  <p>Every pig becomes a voxel toy from the original pixel art. Drag to spin.</p>
 </header>
 
 <main class="container studio">
@@ -151,8 +151,8 @@
       <button type="button" class="btn btn-secondary" id="rand-btn">RANDOM</button>
       <button type="button" class="btn btn-secondary" id="next-btn">NEXT</button>
     </div>
-    <label class="slider" for="depth">plump <span id="depth-val">1.4</span></label>
-    <input id="depth" type="range" min="0.6" max="2.2" step="0.1" value="1.4">
+    <label class="slider" for="depth">thickness <span id="depth-val">1.4</span></label>
+    <input id="depth" type="range" min="0.4" max="2.4" step="0.1" value="1.4">
     <label class="check"><input type="checkbox" id="auto-rotate" checked> auto-rotate</label>
     <label class="check"><input type="checkbox" id="show-bg" checked> keep background color</label>
     <button type="button" class="btn btn-wide" id="shot-btn">SAVE SNAPSHOT</button>
@@ -176,8 +176,6 @@
 
   const MAX_ID = 3333;
   const GRID = 72;
-  const RES = 144;
-  const THRESH = 0.2;
   const IMAGES = "https://pixelpigs.s3.filebase.io/images/";
   const LEGENDARY = [1, 43, 70, 421, 501, 778, 889, 1002, 1338, 2025, 3142, 3333];
 
@@ -192,10 +190,10 @@
   const metaEl = document.getElementById("pig-meta");
 
   let currentId = 1;
-  let currentPig = null;
+  let currentVoxels = [];
   let currentBg = { r: 0, g: 0, b: 0 };
-  let pigGroup = null;
-  const toonGradient = makeToonGradient();
+  let pigMesh = null;
+  let floorMesh = null;
 
   function imageIdx(tokenId) {
     return String(tokenId - 1).padStart(4, "0");
@@ -221,87 +219,12 @@
     return Math.min(MAX_ID, Math.max(1, id));
   }
 
-  function makeToonGradient() {
-    const steps = [
-      [88, 62, 68],
-      [150, 118, 112],
-      [220, 198, 178],
-      [255, 248, 236],
-    ];
-    const data = new Uint8Array(steps.length * 4);
-    steps.forEach((c, i) => {
-      data[i * 4] = c[0];
-      data[i * 4 + 1] = c[1];
-      data[i * 4 + 2] = c[2];
-      data[i * 4 + 3] = 255;
-    });
-    const tex = new THREE.DataTexture(data, steps.length, 1, THREE.RGBAFormat);
-    tex.minFilter = THREE.NearestFilter;
-    tex.magFilter = THREE.NearestFilter;
-    tex.needsUpdate = true;
-    return tex;
-  }
-
-  function grid2d(n, fill = 0) {
-    return Array.from({ length: n }, () => Array(n).fill(fill));
-  }
-
-  function bilinear(src, x, y, n) {
-    const x0 = Math.floor(x);
-    const y0 = Math.floor(y);
-    const x1 = Math.min(n - 1, x0 + 1);
-    const y1 = Math.min(n - 1, y0 + 1);
-    const tx = x - x0;
-    const ty = y - y0;
-    const a = src[Math.max(0, y0)][Math.max(0, x0)];
-    const b = src[Math.max(0, y0)][x1];
-    const c = src[y1][Math.max(0, x0)];
-    const d = src[y1][x1];
-    return a * (1 - tx) * (1 - ty) + b * tx * (1 - ty) + c * (1 - tx) * ty + d * tx * ty;
-  }
-
-  function upsample(src, srcN, dstN) {
-    const out = grid2d(dstN, 0);
-    const scale = srcN / dstN;
-    for (let y = 0; y < dstN; y++) {
-      for (let x = 0; x < dstN; x++) {
-        out[y][x] = bilinear(src, (x + 0.5) * scale - 0.5, (y + 0.5) * scale - 0.5, srcN);
-      }
-    }
-    return out;
-  }
-
-  function blur(src, n, passes) {
-    let cur = src;
-    for (let p = 0; p < passes; p++) {
-      const next = grid2d(n, 0);
-      for (let y = 0; y < n; y++) {
-        for (let x = 0; x < n; x++) {
-          let s = 0;
-          let c = 0;
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              const xx = x + dx;
-              const yy = y + dy;
-              if (xx < 0 || yy < 0 || xx >= n || yy >= n) continue;
-              s += cur[yy][xx];
-              c++;
-            }
-          }
-          next[y][x] = s / c;
-        }
-      }
-      cur = next;
-    }
-    return cur;
-  }
-
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0808);
-  scene.fog = new THREE.Fog(0x0a0808, 110, 180);
+  scene.background = new THREE.Color(0x070707);
+  scene.fog = new THREE.Fog(0x070707, 90, 160);
 
-  const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 400);
-  camera.position.set(32, 16, 58);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 400);
+  camera.position.set(38, 22, 54);
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -310,29 +233,30 @@
   const controls = new OrbitControls(camera, canvas);
   controls.enableDamping = true;
   controls.autoRotate = true;
-  controls.autoRotateSpeed = 1.15;
+  controls.autoRotateSpeed = 1.4;
   controls.minDistance = 28;
   controls.maxDistance = 110;
-  controls.target.set(0, 3, 0);
+  controls.target.set(0, 2, 0);
 
-  scene.add(new THREE.HemisphereLight(0xfff1e4, 0x2a1814, 0.95));
-  const key = new THREE.DirectionalLight(0xfff6ea, 1.05);
-  key.position.set(18, 36, 28);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 1.15);
+  key.position.set(24, 40, 30);
   scene.add(key);
-  const fill = new THREE.DirectionalLight(0xffb08a, 0.4);
-  fill.position.set(-28, 12, 16);
+  const fill = new THREE.DirectionalLight(0xffbc94, 0.45);
+  fill.position.set(-30, 10, 12);
   scene.add(fill);
-  const rim = new THREE.DirectionalLight(0xffe08a, 0.55);
-  rim.position.set(-8, 22, -36);
+  const rim = new THREE.DirectionalLight(0xccff00, 0.35);
+  rim.position.set(0, 18, -40);
   scene.add(rim);
 
   const floor = new THREE.Mesh(
-    new THREE.CircleGeometry(34, 64),
-    new THREE.MeshStandardMaterial({ color: 0x141010, roughness: 1, metalness: 0 })
+    new THREE.CircleGeometry(38, 48),
+    new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.9, metalness: 0 })
   );
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = -18;
   scene.add(floor);
+  floorMesh = floor;
 
   function resize() {
     const rect = canvas.parentElement.getBoundingClientRect();
@@ -365,7 +289,7 @@
     return { r: Math.round(r / n), g: Math.round(g / n), b: Math.round(b / n) };
   }
 
-  function extractPig(img) {
+  function extractVoxels(img) {
     const c = document.createElement("canvas");
     c.width = GRID;
     c.height = GRID;
@@ -374,220 +298,104 @@
     ctx.drawImage(img, 0, 0, GRID, GRID);
     const { data } = ctx.getImageData(0, 0, GRID, GRID);
     const bg = sampleBg(data, GRID, GRID);
-
-    const occ = grid2d(GRID, 0);
-    const keyed = ctx.createImageData(GRID, GRID);
-    let minY = GRID, maxY = 0;
+    const occupied = Array.from({ length: GRID }, () => Array(GRID).fill(false));
+    const colors = Array.from({ length: GRID }, () => Array(GRID).fill(null));
 
     for (let y = 0; y < GRID; y++) {
       for (let x = 0; x < GRID; x++) {
         const i = (y * GRID + x) * 4;
         const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
-        const keep = a >= 12 && Math.hypot(r - bg.r, g - bg.g, b - bg.b) >= 22;
-        if (!keep) continue;
-        occ[y][x] = 1;
-        keyed.data[i] = r;
-        keyed.data[i + 1] = g;
-        keyed.data[i + 2] = b;
-        keyed.data[i + 3] = 255;
-        if (y < minY) minY = y;
-        if (y > maxY) maxY = y;
+        if (a < 12) continue;
+        const dist = Math.hypot(r - bg.r, g - bg.g, b - bg.b);
+        if (dist < 22) continue;
+        occupied[y][x] = true;
+        colors[y][x] = { r, g, b };
       }
     }
 
-    const occHi = blur(upsample(occ, GRID, RES), RES, 5);
-    const height = grid2d(RES, 0);
-    let count = 0;
-    for (let y = 0; y < RES; y++) {
-      for (let x = 0; x < RES; x++) {
-        const t = Math.max(0, (occHi[y][x] - THRESH) / (1 - THRESH));
-        if (t <= 0) continue;
-        height[y][x] = Math.pow(t, 0.52);
-        count++;
+    const INF = 99;
+    const thick = Array.from({ length: GRID }, () => Array(GRID).fill(0));
+    const q = [];
+    for (let y = 0; y < GRID; y++) {
+      for (let x = 0; x < GRID; x++) {
+        if (!occupied[y][x]) {
+          thick[y][x] = 0;
+          q.push([x, y]);
+        } else {
+          thick[y][x] = INF;
+        }
+      }
+    }
+    const dirs = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+    for (let i = 0; i < q.length; i++) {
+      const [x, y] = q[i];
+      for (const [dx, dy] of dirs) {
+        const nx = x + dx, ny = y + dy;
+        if (nx < 0 || ny < 0 || nx >= GRID || ny >= GRID) continue;
+        if (thick[ny][nx] > thick[y][x] + 1) {
+          thick[ny][nx] = thick[y][x] + 1;
+          q.push([nx, ny]);
+        }
       }
     }
 
-    const paint = document.createElement("canvas");
-    paint.width = 256;
-    paint.height = 256;
-    const pctx = paint.getContext("2d");
-    const tiny = document.createElement("canvas");
-    tiny.width = GRID;
-    tiny.height = GRID;
-    tiny.getContext("2d").putImageData(keyed, 0, 0);
-    pctx.imageSmoothingEnabled = true;
-    pctx.imageSmoothingQuality = "high";
-    pctx.drawImage(tiny, 0, 0, 256, 256);
-
-    return { occHi, height, paint, bg, minY, maxY, count };
+    const voxels = [];
+    for (let y = 0; y < GRID; y++) {
+      for (let x = 0; x < GRID; x++) {
+        if (!occupied[y][x]) continue;
+        voxels.push({ x, y, z: thick[y][x], ...colors[y][x] });
+      }
+    }
+    return { voxels, bg };
   }
 
-  function cornerHeight(height, occHi, cx, cy) {
-    let s = 0;
-    let n = 0;
-    for (const [dx, dy] of [[0, 0], [-1, 0], [0, -1], [-1, -1]]) {
-      const x = cx + dx;
-      const y = cy + dy;
-      if (x < 0 || y < 0 || x >= RES || y >= RES) continue;
-      if (occHi[y][x] <= THRESH) continue;
-      s += height[y][x];
-      n++;
+  function rebuildMesh(depthScale) {
+    if (pigMesh) {
+      scene.remove(pigMesh);
+      pigMesh.geometry.dispose();
+      pigMesh.material.dispose();
+      pigMesh = null;
     }
-    return n ? s / n : 0;
-  }
+    if (!currentVoxels.length) return;
 
-  function buildToonGeometry(occHi, height, plump) {
-    const positions = [];
-    const uvs = [];
-    const indices = [];
-    const front = Array.from({ length: RES + 1 }, () => Array(RES + 1).fill(-1));
-    const back = Array.from({ length: RES + 1 }, () => Array(RES + 1).fill(-1));
-    const maxZ = 3.6 + plump * 7.2;
+    const geo = new THREE.BoxGeometry(0.92, 0.92, 0.92);
+    const mat = new THREE.MeshLambertMaterial();
+    const mesh = new THREE.InstancedMesh(geo, mat, currentVoxels.length);
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 
-    function addVert(cx, cy, z, uFlip) {
-      const px = (cx / RES) * GRID - GRID / 2;
-      const py = GRID / 2 - (cy / RES) * GRID;
-      const i = positions.length / 3;
-      positions.push(px, py, z);
-      uvs.push(uFlip ? 1 - cx / RES : cx / RES, 1 - cy / RES);
-      return i;
-    }
+    const dummy = new THREE.Object3D();
+    const color = new THREE.Color();
+    const cx = (GRID - 1) / 2;
+    const cy = (GRID - 1) / 2;
 
-    function frontVert(cx, cy) {
-      if (front[cy][cx] < 0) {
-        front[cy][cx] = addVert(cx, cy, cornerHeight(height, occHi, cx, cy) * maxZ, false);
-      }
-      return front[cy][cx];
-    }
-
-    function backVert(cx, cy) {
-      if (back[cy][cx] < 0) {
-        back[cy][cx] = addVert(cx, cy, -cornerHeight(height, occHi, cx, cy) * maxZ, true);
-      }
-      return back[cy][cx];
-    }
-
-    function occupied(x, y) {
-      return x >= 0 && y >= 0 && x < RES && y < RES && occHi[y][x] > THRESH;
-    }
-
-    for (let y = 0; y < RES; y++) {
-      for (let x = 0; x < RES; x++) {
-        if (!occupied(x, y)) continue;
-        const a = frontVert(x, y);
-        const b = frontVert(x + 1, y);
-        const c = frontVert(x + 1, y + 1);
-        const d = frontVert(x, y + 1);
-        indices.push(a, b, c, a, c, d);
-        const ab = backVert(x, y);
-        const bb = backVert(x + 1, y);
-        const cb = backVert(x + 1, y + 1);
-        const db = backVert(x, y + 1);
-        indices.push(ab, cb, bb, ab, db, cb);
-
-        if (!occupied(x, y - 1)) {
-          const s0 = frontVert(x, y);
-          const s1 = frontVert(x + 1, y);
-          const s2 = backVert(x + 1, y);
-          const s3 = backVert(x, y);
-          indices.push(s0, s1, s2, s0, s2, s3);
-        }
-        if (!occupied(x, y + 1)) {
-          const s0 = frontVert(x + 1, y + 1);
-          const s1 = frontVert(x, y + 1);
-          const s2 = backVert(x, y + 1);
-          const s3 = backVert(x + 1, y + 1);
-          indices.push(s0, s1, s2, s0, s2, s3);
-        }
-        if (!occupied(x - 1, y)) {
-          const s0 = frontVert(x, y + 1);
-          const s1 = frontVert(x, y);
-          const s2 = backVert(x, y);
-          const s3 = backVert(x, y + 1);
-          indices.push(s0, s1, s2, s0, s2, s3);
-        }
-        if (!occupied(x + 1, y)) {
-          const s0 = frontVert(x + 1, y);
-          const s1 = frontVert(x + 1, y + 1);
-          const s2 = backVert(x + 1, y + 1);
-          const s3 = backVert(x + 1, y);
-          indices.push(s0, s1, s2, s0, s2, s3);
-        }
-      }
-    }
-
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    geo.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-    geo.setIndex(indices);
-    geo.computeVertexNormals();
-    return geo;
-  }
-
-  function disposeGroup(group) {
-    const seen = new Set();
-    group.traverse((obj) => {
-      if (obj.geometry && !seen.has(obj.geometry)) {
-        seen.add(obj.geometry);
-        obj.geometry.dispose();
-      }
-      const mats = obj.material ? (Array.isArray(obj.material) ? obj.material : [obj.material]) : [];
-      for (const m of mats) {
-        if (!m || seen.has(m)) continue;
-        seen.add(m);
-        if (m.map && m.map !== toonGradient) m.map.dispose();
-        m.dispose();
-      }
+    currentVoxels.forEach((v, i) => {
+      const depth = Math.max(1.1, 1 + v.z * depthScale);
+      dummy.position.set(v.x - cx, cy - v.y, 0);
+      dummy.scale.set(1, 1, depth);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(i, dummy.matrix);
+      color.setRGB(v.r / 255, v.g / 255, v.b / 255);
+      color.convertSRGBToLinear();
+      mesh.setColorAt(i, color);
     });
-  }
+    mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+    scene.add(mesh);
+    pigMesh = mesh;
 
-  function rebuildMesh(plump) {
-    if (pigGroup) {
-      scene.remove(pigGroup);
-      disposeGroup(pigGroup);
-      pigGroup = null;
-    }
-    if (!currentPig) return;
-
-    const geo = buildToonGeometry(currentPig.occHi, currentPig.height, plump);
-    const map = new THREE.CanvasTexture(currentPig.paint);
-    map.colorSpace = THREE.SRGBColorSpace;
-    map.minFilter = THREE.LinearFilter;
-    map.magFilter = THREE.LinearFilter;
-    map.generateMipmaps = false;
-    map.needsUpdate = true;
-
-    const mat = new THREE.MeshToonMaterial({
-      map,
-      gradientMap: toonGradient,
-      transparent: true,
-      alphaTest: 0.12,
-    });
-    const body = new THREE.Mesh(geo, mat);
-
-    const outline = new THREE.Mesh(
-      geo,
-      new THREE.MeshBasicMaterial({ color: 0x1a0c0a, side: THREE.BackSide })
-    );
-    outline.scale.setScalar(1.055);
-
-    pigGroup = new THREE.Group();
-    pigGroup.add(outline);
-    pigGroup.add(body);
-    scene.add(pigGroup);
-
-    floor.position.y = GRID / 2 - ((currentPig.maxY + 1) / GRID) * GRID - 1.2;
+    const lowest = Math.max(...currentVoxels.map((v) => v.y));
+    floor.position.y = cy - lowest - 1.6;
   }
 
   function applyBackground(bg, on) {
     if (!on) {
-      floor.material.color.setHex(0x141010);
+      floor.material.color.setHex(0x111111);
       return;
     }
     const c = new THREE.Color(bg.r / 255, bg.g / 255, bg.b / 255);
     c.convertSRGBToLinear();
     floor.material.color.copy(c);
-    floor.material.color.multiplyScalar(0.28);
+    floor.material.color.multiplyScalar(0.35);
   }
 
   async function showPig(rawId) {
@@ -600,7 +408,7 @@
 
     preview.src = imageUrl(id);
     metaEl.innerHTML = `PixelPig <strong>#${id}</strong>`;
-    setStatus(`sculpting #${id}…`);
+    setStatus(`building #${id}…`);
     document.querySelectorAll(".chip").forEach((el) => {
       el.classList.toggle("on", Number(el.dataset.id) === id);
     });
@@ -612,13 +420,13 @@
       } catch {
         img = await loadImage(imageUrl(id));
       }
-      const pig = extractPig(img);
-      if (!pig.count) throw new Error("no pixels found");
-      currentPig = pig;
-      currentBg = pig.bg;
+      const { voxels, bg } = extractVoxels(img);
+      if (!voxels.length) throw new Error("no pixels found");
+      currentVoxels = voxels;
+      currentBg = bg;
       rebuildMesh(Number(depthInput.value));
-      applyBackground(pig.bg, showBg.checked);
-      setStatus(`cartoon #${id}`);
+      applyBackground(bg, showBg.checked);
+      setStatus(`${voxels.length} voxels · #${id}`);
     } catch (err) {
       console.warn(err);
       setStatus("could not read this pig image", true);
